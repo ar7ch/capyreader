@@ -287,7 +287,7 @@ private fun SummarizeArticleButton(
         onClick = onClick,
         modifier = Modifier.size(SUMMARIZE_BUTTON_SIZE)
     ) {
-        if (status == SummaryStatus.Queued || status == SummaryStatus.Running) {
+        if (status == SummaryStatus.Queued || status is SummaryStatus.Running) {
             FullContentLoadingIcon(modifier = Modifier.size(SUMMARIZE_ICON_SIZE))
         } else {
             Icon(

@@ -20,10 +20,15 @@ class Summarizer(
     private val chatClient: ChatClient,
     private val httpClient: OkHttpClient,
 ) {
+    /**
+     * [onProgress] follows the work as it happens: the stage it has reached, and the summary as far
+     * as the model has written it, or null when only the stage changed.
+     */
     suspend fun summarize(
         settings: AiSettings,
         article: Article,
         pageHTML: String?,
+        onProgress: (Summary?, SummaryStage) -> Unit = { _, _ -> },
     ): Result<Summary> {
         val body = ReadableText.fromHTML(pageHTML.orEmpty(), article.url?.toString().orEmpty())
             .ifBlank { ReadableText.fromHTML(article.defaultContent) }
@@ -32,16 +37,21 @@ class Summarizer(
             return Result.failure(EmptyArticleError())
         }
 
+        onProgress(null, SummaryStage.SUMMARIZING_ARTICLE)
+
         val articleSummary = chatClient.complete(
             settings = settings,
             system = ARTICLE_SYSTEM_PROMPT,
             user = articlePrompt(title = article.title, body = body),
+            onDelta = { partial ->
+                onProgress(Summary(article = partial), SummaryStage.SUMMARIZING_ARTICLE)
+            },
         ).getOrElse { return Result.failure(it) }
 
         return Result.success(
             Summary(
                 article = articleSummary,
-                discussion = discussionSummary(settings, article),
+                discussion = discussionSummary(settings, article, articleSummary, onProgress),
             )
         )
     }
@@ -49,7 +59,16 @@ class Summarizer(
     /**
      * A missing or broken comment thread leaves the article summary alone.
      */
-    private suspend fun discussionSummary(settings: AiSettings, article: Article): String? {
+    private suspend fun discussionSummary(
+        settings: AiSettings,
+        article: Article,
+        articleSummary: String,
+        onProgress: (Summary?, SummaryStage) -> Unit,
+    ): String? {
+        if (Discussion.supports(article.commentsURL)) {
+            onProgress(Summary(article = articleSummary), SummaryStage.FETCHING_COMMENTS)
+        }
+
         val thread = Discussion.fetch(article.commentsURL, httpClient)
             .onFailure {
                 CapyLog.warn(
@@ -59,10 +78,18 @@ class Summarizer(
             }
             .getOrNull() ?: return null
 
+        onProgress(Summary(article = articleSummary), SummaryStage.SUMMARIZING_COMMENTS)
+
         return chatClient.complete(
             settings = settings,
             system = DISCUSSION_SYSTEM_PROMPT,
             user = discussionPrompt(title = article.title, thread = thread),
+            onDelta = { partial ->
+                onProgress(
+                    Summary(article = articleSummary, discussion = partial),
+                    SummaryStage.SUMMARIZING_COMMENTS,
+                )
+            },
         ).getOrNull()?.ifBlank { null }
     }
 

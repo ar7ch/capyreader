@@ -1015,7 +1015,7 @@ fun summaryState(status: SummaryStatus?): ArticleScreenViewModel.SummaryState {
     return when (status) {
         null -> ArticleScreenViewModel.SummaryState.Idle
         SummaryStatus.Queued,
-        SummaryStatus.Running,
+        is SummaryStatus.Running,
         SummaryStatus.Stored -> ArticleScreenViewModel.SummaryState.Loading
         is SummaryStatus.Done -> ArticleScreenViewModel.SummaryState.Success(status.summary)
         is SummaryStatus.Failed -> ArticleScreenViewModel.SummaryState.Error(status.message)

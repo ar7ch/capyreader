@@ -126,6 +126,44 @@ class SummarizerTest {
     }
 
     @Test
+    fun summarize_reportsStagesAndPartialText() = runTest {
+        val chat = RecordingInterceptor(
+            responses = listOf(
+                chatStream(listOf("The release ", "adds backups.")),
+                chatStream(listOf("- Commenters ", "liked it.")),
+            ),
+            contentTypes = listOf(RecordingInterceptor.EVENT_STREAM_CONTENT_TYPE),
+        )
+        val web = RecordingInterceptor(hackerNewsJSON)
+        val stages = mutableListOf<SummaryStage>()
+        val partials = mutableListOf<Summary?>()
+
+        val result = Summarizer(ChatClient(chat.client()), web.client()).summarize(
+            settings = settings,
+            article = article(commentsURL = "https://news.ycombinator.com/item?id=42"),
+            pageHTML = "<body><article><p>Some real article text.</p></article></body>",
+            onProgress = { partial, stage ->
+                stages.add(stage)
+                partials.add(partial)
+            },
+        ).getOrThrow()
+
+        assertEquals(
+            expected = listOf(
+                SummaryStage.SUMMARIZING_ARTICLE,
+                SummaryStage.FETCHING_COMMENTS,
+                SummaryStage.SUMMARIZING_COMMENTS,
+            ),
+            actual = stages.distinct(),
+        )
+        assertNull(partials.first())
+        assertContains(partials.mapNotNull { it?.article }, "The release")
+        assertEquals(expected = "- Commenters", actual = partials.mapNotNull { it?.discussion }.first())
+        assertEquals(expected = "The release adds backups.", actual = result.article)
+        assertEquals(expected = "- Commenters liked it.", actual = result.discussion)
+    }
+
+    @Test
     fun summarize_keepsArticleSummaryWhenDiscussionFails() = runTest {
         val chat = RecordingInterceptor(chatResponse("Article summary."))
         val web = RecordingInterceptor("boom", code = 503)

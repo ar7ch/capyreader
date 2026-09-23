@@ -11,10 +11,22 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/** What the queue is doing for an article right now, in the order the stages happen. */
+enum class SummaryStage {
+    FETCHING_PAGE,
+    SUMMARIZING_ARTICLE,
+    FETCHING_COMMENTS,
+    SUMMARIZING_COMMENTS,
+}
+
 sealed interface SummaryStatus {
     data object Queued : SummaryStatus
 
-    data object Running : SummaryStatus
+    /** [partial] is the summary as far as the model has written it, or null before it starts. */
+    data class Running(
+        val partial: Summary? = null,
+        val stage: SummaryStage = SummaryStage.FETCHING_PAGE,
+    ) : SummaryStatus
 
     /** A summary is on disk. Reading it takes one query, so it is not loaded until asked for. */
     data object Stored : SummaryStatus
@@ -62,6 +74,9 @@ class SummaryQueue(
 
     private var completed = 0
 
+    /** How much partial text the running article has published, for the throttle below. */
+    private var publishedLength = 0
+
     private val _states = MutableStateFlow<Map<String, SummaryStatus>>(emptyMap())
 
     val states: StateFlow<Map<String, SummaryStatus>> = _states.asStateFlow()
@@ -107,7 +122,7 @@ class SummaryQueue(
     fun prioritize(articleID: String, regenerate: Boolean = false) {
         if (!regenerate) {
             when (status(articleID)) {
-                SummaryStatus.Running, is SummaryStatus.Done -> return
+                is SummaryStatus.Running, is SummaryStatus.Done -> return
                 SummaryStatus.Stored -> {
                     load(articleID)
                     return
@@ -140,7 +155,7 @@ class SummaryQueue(
             completed = 0
             _progress.value = null
             handled.entries.removeAll {
-                it.value == SummaryStatus.Queued || it.value == SummaryStatus.Running
+                it.value == SummaryStatus.Queued || it.value is SummaryStatus.Running
             }
             publishStates()
 
@@ -193,7 +208,8 @@ class SummaryQueue(
             _progress.value = null
         } else {
             running = articleID
-            setStatus(articleID, SummaryStatus.Running)
+            publishedLength = 0
+            setStatus(articleID, SummaryStatus.Running())
             publishProgress()
         }
 
@@ -237,7 +253,12 @@ class SummaryQueue(
 
             val current = settings()
 
-            summarizer.summarize(settings = current, article = article, pageHTML = pageHTML).fold(
+            summarizer.summarize(
+                settings = current,
+                article = article,
+                pageHTML = pageHTML,
+                onProgress = { partial, stage -> report(articleID, partial, stage) },
+            ).fold(
                 onSuccess = { summary ->
                     account.saveSummary(articleID, summary, model = current.model)
                     setStatus(articleID, SummaryStatus.Done(summary))
@@ -250,6 +271,28 @@ class SummaryQueue(
             fail(articleID, e)
         }
     }
+
+    /**
+     * Publishes where the summary has got to. A stage change always goes out; growing text waits
+     * until there is a sentence or so of it, so a fast model does not publish once per token.
+     */
+    private fun report(articleID: String, partial: Summary?, stage: SummaryStage) =
+        synchronized(lock) {
+            if (running != articleID) {
+                return@synchronized
+            }
+
+            val current = handled[articleID] as? SummaryStatus.Running
+            val text = partial ?: current?.partial
+            val length = text?.article.orEmpty().length + text?.discussion.orEmpty().length
+
+            if (current?.stage == stage && length < publishedLength + PARTIAL_STEP) {
+                return@synchronized
+            }
+
+            publishedLength = length
+            setStatus(articleID, SummaryStatus.Running(partial = text, stage = stage))
+        }
 
     private fun fail(articleID: String, error: Throwable) {
         CapyLog.warn(
@@ -267,7 +310,7 @@ class SummaryQueue(
 
     private fun isSettled(articleID: String): Boolean = when (status(articleID)) {
         SummaryStatus.Queued,
-        SummaryStatus.Running,
+        is SummaryStatus.Running,
         SummaryStatus.Stored,
         is SummaryStatus.Done -> true
 
@@ -297,5 +340,8 @@ class SummaryQueue(
 
     private companion object {
         const val MISSING_ARTICLE_MESSAGE = "The article could not be found"
+
+        /** Characters of new text worth a state update. */
+        const val PARTIAL_STEP = 50
     }
 }

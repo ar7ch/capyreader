@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
@@ -74,7 +75,7 @@ class SummaryQueueTest {
         val queue = buildQueue()
 
         queue.enqueue(articleIDs)
-        queue.states.first { it["1"] == SummaryStatus.Running }
+        queue.states.first { it["1"] is SummaryStatus.Running }
 
         queue.prioritize("3")
         gate.complete(Unit)
@@ -101,7 +102,7 @@ class SummaryQueueTest {
 
         assertEquals(expected = SummaryStatus.Stored, actual = queue.states.value["1"])
         assertNull(queue.progress.value)
-        coVerify(exactly = 0) { summarizer.summarize(any(), any(), any()) }
+        coVerify(exactly = 0) { summarizer.summarize(any(), any(), any(), any()) }
     }
 
     @Test
@@ -116,7 +117,7 @@ class SummaryQueueTest {
         queue.states.first { it["1"] == SummaryStatus.Stored }
 
         queue.enqueue(listOf("2"))
-        queue.states.first { it["2"] == SummaryStatus.Running }
+        queue.states.first { it["2"] is SummaryStatus.Running }
 
         queue.prioritize("1")
 
@@ -124,8 +125,8 @@ class SummaryQueueTest {
             expected = SummaryStatus.Done(stored),
             actual = queue.states.first { it["1"] is SummaryStatus.Done }["1"],
         )
-        assertEquals(expected = SummaryStatus.Running, actual = queue.states.value["2"])
-        coVerify(exactly = 0) { summarizer.summarize(any(), match { it.id == "1" }, any()) }
+        assertTrue(queue.states.value["2"] is SummaryStatus.Running)
+        coVerify(exactly = 0) { summarizer.summarize(any(), match { it.id == "1" }, any(), any()) }
 
         gate.complete(Unit)
     }
@@ -133,7 +134,7 @@ class SummaryQueueTest {
     @Test
     fun enqueue_continuesAfterAFailure() = runTest {
         val articleIDs = createArticles("1", "2")
-        coEvery { summarizer.summarize(any(), any(), any()) } coAnswers {
+        coEvery { summarizer.summarize(any(), any(), any(), any()) } coAnswers {
             val articleID = secondArg<Article>().id
             summarized.add(articleID)
 
@@ -160,6 +161,69 @@ class SummaryQueueTest {
     }
 
     @Test
+    fun enqueue_publishesPartialTextAndStages() = runTest {
+        createArticles("1")
+        val half = "The release adds incremental backups to the base backup command."
+        val whole = "$half It lands in the next major version."
+        val steps = Channel<Unit>()
+        coEvery { summarizer.summarize(any(), any(), any(), any()) } coAnswers {
+            val onProgress = arg<(Summary?, SummaryStage) -> Unit>(3)
+
+            steps.receive()
+            onProgress(null, SummaryStage.SUMMARIZING_ARTICLE)
+            // Too little new text to be worth a state update of its own.
+            onProgress(Summary(article = "The rel"), SummaryStage.SUMMARIZING_ARTICLE)
+            onProgress(Summary(article = half), SummaryStage.SUMMARIZING_ARTICLE)
+            steps.receive()
+            onProgress(Summary(article = whole), SummaryStage.SUMMARIZING_COMMENTS)
+            steps.receive()
+
+            Result.success(Summary(article = whole, discussion = "Commenters agreed."))
+        }
+        val queue = buildQueue()
+
+        queue.enqueue(listOf("1"))
+
+        assertEquals(
+            expected = SummaryStatus.Running(
+                partial = null,
+                stage = SummaryStage.FETCHING_PAGE,
+            ),
+            actual = queue.states.first { it["1"] is SummaryStatus.Running }["1"],
+        )
+
+        steps.send(Unit)
+
+        assertEquals(
+            expected = SummaryStatus.Running(
+                partial = Summary(article = half),
+                stage = SummaryStage.SUMMARIZING_ARTICLE,
+            ),
+            actual = queue.states.first { partial(it) != null }["1"],
+        )
+
+        steps.send(Unit)
+
+        assertEquals(
+            expected = SummaryStatus.Running(
+                partial = Summary(article = whole),
+                stage = SummaryStage.SUMMARIZING_COMMENTS,
+            ),
+            actual = queue.states.first { stage(it) == SummaryStage.SUMMARIZING_COMMENTS }["1"],
+        )
+
+        steps.send(Unit)
+        queue.awaitSettled(listOf("1"))
+
+        assertEquals(
+            expected = SummaryStatus.Done(
+                Summary(article = whole, discussion = "Commenters agreed.")
+            ),
+            actual = queue.states.value["1"],
+        )
+    }
+
+    @Test
     fun cancelAll_emptiesTheQueue() = runTest {
         val articleIDs = createArticles("1", "2", "3")
         val gate = CompletableDeferred<Unit>()
@@ -167,7 +231,7 @@ class SummaryQueueTest {
         val queue = buildQueue()
 
         queue.enqueue(articleIDs)
-        queue.states.first { it["1"] == SummaryStatus.Running }
+        queue.states.first { it["1"] is SummaryStatus.Running }
 
         assertEquals(expected = SummaryProgress(done = 0, total = 3), actual = queue.progress.value)
 
@@ -179,6 +243,12 @@ class SummaryQueueTest {
         assertTrue(queue.states.value.isEmpty())
         assertTrue(summarized.isEmpty())
     }
+
+    private fun partial(states: Map<String, SummaryStatus>): Summary? =
+        (states["1"] as? SummaryStatus.Running)?.partial
+
+    private fun stage(states: Map<String, SummaryStatus>): SummaryStage? =
+        (states["1"] as? SummaryStatus.Running)?.stage
 
     private fun TestScope.buildQueue() = SummaryQueue(
         account = account,
@@ -205,7 +275,7 @@ class SummaryQueueTest {
     }
 
     private fun succeedAll(holdBack: String? = null, gate: CompletableDeferred<Unit>? = null) {
-        coEvery { summarizer.summarize(any(), any(), any()) } coAnswers {
+        coEvery { summarizer.summarize(any(), any(), any(), any()) } coAnswers {
             val articleID = secondArg<Article>().id
 
             if (articleID == holdBack) {
