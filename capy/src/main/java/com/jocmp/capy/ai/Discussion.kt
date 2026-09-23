@@ -87,7 +87,7 @@ object Discussion {
             val text = plainText(node.text)
 
             if (text.isNotBlank()) {
-                lines.add(line(author = node.author, score = node.points, text = text))
+                lines.add(line(score = node.points, text = text))
             }
 
             node.children.forEach(::visit)
@@ -105,18 +105,19 @@ object Discussion {
             if (text.isBlank()) {
                 null
             } else {
-                line(author = comment.commenting_user, score = comment.score, text = text)
+                line(score = comment.score, text = text)
             }
         }
 
         return join(lines)
     }
 
-    private fun line(author: String?, score: Int?, text: String): String {
-        val name = author?.takeIf { it.isNotBlank() } ?: "anonymous"
-        val points = score?.let { ", $it points" }.orEmpty()
+    // Usernames stay out of the prompt: summaries should not name commenters, and a name is one
+    // more piece of untrusted text for the model to echo.
+    private fun line(score: Int?, text: String): String {
+        val points = score?.let { "[$it points] " }.orEmpty()
 
-        return "[$name$points] $text"
+        return "- $points$text"
     }
 
     private fun join(lines: List<String>): String {

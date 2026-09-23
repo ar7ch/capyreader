@@ -95,18 +95,25 @@ class Summarizer(
 
             $RULES
 
-            Write three to five sentences covering the main point and the key details. If the text is empty or
-            unreadable, say that the article could not be read.
+            Write three to five plain sentences. Lead with the main claim or finding, then the concrete details
+            that support it: numbers, names of things, what changed and why it matters. Skip the site's
+            boilerplate, marketing language, and the author's throat clearing. Do not open with "The article"
+            or "This post"; state the content directly. If the text is empty or unreadable, say in one sentence
+            that the article could not be read.
         """.trimIndent()
 
         internal val DISCUSSION_SYSTEM_PROMPT = """
             You summarize comment threads for a feed reader. You receive comments between $COMMENTS_OPEN and
-            $COMMENTS_CLOSE, one per line, each prefixed with its author and score.
+            $COMMENTS_CLOSE, one per line, in thread order, some prefixed with a score.
 
             $RULES
 
-            Write up to five short bullet points with the most interesting points, disagreements, and corrections
-            raised by commenters. Attribute opinions to commenters rather than stating them as fact.
+            Write up to five short bullet points, fewer when the thread is thin, each one or two sentences.
+            Prefer, in this order: corrections or challenges to the article's claims, firsthand experience with
+            the subject, practical advice or alternatives, and clear points of agreement or disagreement.
+            Skip jokes, meta discussion about the site, and repetition. Never name or quote a commenter;
+            write "commenters", "one reply", or "several people" instead. If nothing substantive was said,
+            reply with one sentence saying so.
         """.trimIndent()
 
         /**

@@ -74,7 +74,7 @@ class DiscussionTest {
         ).getOrThrow()
 
         assertEquals(
-            expected = "[alice, 30 points] I like the approach.\n[bob, 5 points] It breaks on Windows.",
+            expected = "- [30 points] I like the approach.\n- [5 points] It breaks on Windows.",
             actual = thread
         )
         assertEquals(
@@ -92,8 +92,8 @@ class DiscussionTest {
             interceptor.client()
         ).getOrThrow()
 
-        assertContains(thread.orEmpty(), "[carol, 9 points] Benchmarks look suspicious.")
-        assertContains(thread.orEmpty(), "[dave, 1 points] Only html here")
+        assertContains(thread.orEmpty(), "- [9 points] Benchmarks look suspicious.")
+        assertContains(thread.orEmpty(), "- [1 points] Only html here")
         assertFalse(thread.orEmpty().contains("<b>"))
     }
 
