@@ -22,7 +22,6 @@ object ReadableText {
         val main = document.selectFirst("article")
             ?: document.selectFirst("main")
             ?: document.body()
-            ?: return ""
 
         return main.text().trim().take(MAX_LENGTH)
     }
