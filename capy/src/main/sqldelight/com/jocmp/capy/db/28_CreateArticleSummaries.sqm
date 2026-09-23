@@ -1,0 +1,7 @@
+CREATE TABLE article_summaries (
+  article_id TEXT NOT NULL PRIMARY KEY REFERENCES articles(id) ON DELETE CASCADE,
+  summary TEXT NOT NULL,
+  discussion TEXT,
+  model TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);

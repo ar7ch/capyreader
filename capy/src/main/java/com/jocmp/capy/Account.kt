@@ -27,7 +27,9 @@ import com.jocmp.capy.db.Database
 import com.jocmp.capy.logging.CapyLog
 import com.jocmp.capy.opml.ImportProgress
 import com.jocmp.capy.opml.OPMLImporter
+import com.jocmp.capy.ai.Summary
 import com.jocmp.capy.persistence.ArticleRecords
+import com.jocmp.capy.persistence.ArticleSummaryRecords
 import com.jocmp.capy.persistence.EnclosureRecords
 import com.jocmp.capy.persistence.FeedRecords
 import com.jocmp.capy.persistence.FolderRecords
@@ -104,6 +106,7 @@ data class Account(
 ) {
     internal val articleRecords = ArticleRecords(database)
     private val enclosureRecords = EnclosureRecords(database)
+    private val articleSummaryRecords = ArticleSummaryRecords(database)
     private val feedRecords = FeedRecords(database)
     private val folderRecords = FolderRecords(database)
     private val taggingRecords = TaggingRecords(database)
@@ -401,6 +404,14 @@ data class Account(
 
     suspend fun fetchFullContent(article: Article): Result<String> {
         return articleContent.fetch(article.url)
+    }
+
+    suspend fun findSummary(articleID: String): Summary? {
+        return articleSummaryRecords.find(articleID)
+    }
+
+    suspend fun saveSummary(articleID: String, summary: Summary, model: String) {
+        articleSummaryRecords.save(articleID = articleID, summary = summary, model = model)
     }
 
     suspend fun opmlDocument(): String {
