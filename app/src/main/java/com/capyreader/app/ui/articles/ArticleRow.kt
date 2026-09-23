@@ -288,7 +288,7 @@ private fun SummarizeArticleButton(
         modifier = Modifier.size(SUMMARIZE_BUTTON_SIZE)
     ) {
         if (status == SummaryStatus.Queued || status == SummaryStatus.Running) {
-            FullContentLoadingIcon(Modifier.size(SUMMARIZE_ICON_SIZE))
+            FullContentLoadingIcon(modifier = Modifier.size(SUMMARIZE_ICON_SIZE))
         } else {
             Icon(
                 Icons.Rounded.AutoAwesome,
