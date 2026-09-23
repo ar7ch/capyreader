@@ -666,12 +666,7 @@ class ArticleScreenViewModel(
     private fun getSummaryState(states: Map<String, SummaryStatus>): SummaryState {
         val articleID = _article?.id ?: return SummaryState.Idle
 
-        return when (val status = states[articleID]) {
-            null -> SummaryState.Idle
-            SummaryStatus.Queued, SummaryStatus.Running -> SummaryState.Loading
-            is SummaryStatus.Done -> SummaryState.Success(status.summary)
-            is SummaryStatus.Failed -> SummaryState.Error(status.message)
-        }
+        return summaryState(states[articleID])
     }
 
     fun startSearch() {
@@ -994,6 +989,15 @@ class ArticleScreenViewModel(
 
     companion object {
         val SYNC_FLUSH_INTERVAL = 2.minutes
+    }
+}
+
+fun summaryState(status: SummaryStatus?): ArticleScreenViewModel.SummaryState {
+    return when (status) {
+        null -> ArticleScreenViewModel.SummaryState.Idle
+        SummaryStatus.Queued, SummaryStatus.Running -> ArticleScreenViewModel.SummaryState.Loading
+        is SummaryStatus.Done -> ArticleScreenViewModel.SummaryState.Success(status.summary)
+        is SummaryStatus.Failed -> ArticleScreenViewModel.SummaryState.Error(status.message)
     }
 }
 

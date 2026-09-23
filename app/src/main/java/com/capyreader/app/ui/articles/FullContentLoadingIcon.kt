@@ -16,16 +16,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun FullContentLoadingIcon() {
+fun FullContentLoadingIcon(modifier: Modifier = Modifier) {
     var flipped by remember { mutableStateOf(false) }
 
     Icon(
         painterResource(id = R.drawable.icon_article_loading),
         contentDescription = null,
         modifier = if (flipped) {
-            Modifier.scale(scaleX = -1f, scaleY = 1f)
+            modifier.scale(scaleX = -1f, scaleY = 1f)
         } else {
-            Modifier
+            modifier
         }
     )
 

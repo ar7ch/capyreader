@@ -86,6 +86,10 @@
     <string name="article_summary_regenerate">Regenerate</string>
     <string name="article_summary_retry">Try again</string>
     <string name="article_summary_error">The summary could not be generated.</string>
+    <string name="article_list_summarize">Summarize</string>
+    <string name="article_list_summarize_unread">Summarize unread</string>
+    <string name="article_list_summarizing_progress">Summarizing %1$d of %2$d</string>
+    <string name="article_list_summarize_cancel">Stop summarizing</string>
     <string name="settings_panel_ai_title">AI summaries</string>
     <string name="settings_ai_enable_title">Enable summaries</string>
     <string name="settings_ai_enable_subtitle">Adds a summarize button to the article toolbar.</string>
