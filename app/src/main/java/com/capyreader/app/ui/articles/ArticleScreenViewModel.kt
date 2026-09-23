@@ -28,8 +28,9 @@ import com.jocmp.capy.Feed
 import com.jocmp.capy.Folder
 import com.jocmp.capy.MarkRead
 import com.jocmp.capy.SavedSearch
-import com.jocmp.capy.ai.Summarizer
 import com.jocmp.capy.ai.Summary
+import com.jocmp.capy.ai.SummaryQueue
+import com.jocmp.capy.ai.SummaryStatus
 import com.jocmp.capy.articles.ArticleContent
 import com.jocmp.capy.articles.SidebarItem
 import com.jocmp.capy.common.UnauthorizedError
@@ -62,15 +63,13 @@ class ArticleScreenViewModel(
     private val appPreferences: AppPreferences,
     private val application: Application,
     private val notificationHelper: NotificationHelper,
-    private val summarizer: Summarizer,
+    private val summaryQueue: SummaryQueue,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val syncFlushInterval: Duration? = SYNC_FLUSH_INTERVAL,
 ) : AndroidViewModel(application) {
     private var refreshJob: Job? = null
 
     private var fullContentJob: Job? = null
-
-    private var summaryJob: Job? = null
 
     var summaryState by mutableStateOf<SummaryState>(SummaryState.Idle)
         private set
@@ -295,6 +294,12 @@ class ArticleScreenViewModel(
         viewModelScope.launch {
             sidebarListener.collect {
                 _sidebarItem.value = it
+            }
+        }
+
+        viewModelScope.launch {
+            summaryQueue.states.collect { states ->
+                summaryState = getSummaryState(states)
             }
         }
 
@@ -645,63 +650,28 @@ class ArticleScreenViewModel(
         get() = appPreferences.aiOptions.enabled.get()
 
     /**
-     * Reads the stored summary first. Only a regenerate request, or a missing row, reaches the model.
+     * The queue reads the stored summary first. Only a regenerate request, or a missing row,
+     * reaches the model.
      */
     fun summarizeAsync(regenerate: Boolean = false) {
         val article = _article ?: return
 
-        if (summaryState == SummaryState.Loading) {
-            return
-        }
-
-        summaryJob?.cancel()
-        summaryState = SummaryState.Loading
-
-        summaryJob = viewModelScope.launchIO {
-            val stored = if (regenerate) null else account.findSummary(article.id)
-
-            if (stored != null) {
-                summaryState = SummaryState.Success(stored)
-                return@launchIO
-            }
-
-            val settings = appPreferences.aiOptions.settings()
-
-            val pageHTML = if (article.fullContent == Article.FullContentState.LOADED) {
-                article.content
-            } else {
-                account.fetchFullContent(article).getOrNull()
-            }
-
-            summarizer.summarize(settings = settings, article = article, pageHTML = pageHTML).fold(
-                onSuccess = { summary ->
-                    account.saveSummary(article.id, summary, model = settings.model)
-
-                    if (_article?.id == article.id) {
-                        summaryState = SummaryState.Success(summary)
-                    }
-                },
-                onFailure = { error ->
-                    CapyLog.warn(
-                        "summarize",
-                        mapOf(
-                            "error_type" to error::class.simpleName,
-                            "error_message" to error.message
-                        )
-                    )
-
-                    if (_article?.id == article.id) {
-                        summaryState = SummaryState.Error(error.message.orEmpty())
-                    }
-                }
-            )
-        }
+        summaryQueue.prioritize(article.id, regenerate = regenerate)
     }
 
     private fun resetSummary() {
-        summaryJob?.cancel()
-        summaryJob = null
-        summaryState = SummaryState.Idle
+        summaryState = getSummaryState(summaryQueue.states.value)
+    }
+
+    private fun getSummaryState(states: Map<String, SummaryStatus>): SummaryState {
+        val articleID = _article?.id ?: return SummaryState.Idle
+
+        return when (val status = states[articleID]) {
+            null -> SummaryState.Idle
+            SummaryStatus.Queued, SummaryStatus.Running -> SummaryState.Loading
+            is SummaryStatus.Done -> SummaryState.Success(status.summary)
+            is SummaryStatus.Failed -> SummaryState.Error(status.message)
+        }
     }
 
     fun startSearch() {

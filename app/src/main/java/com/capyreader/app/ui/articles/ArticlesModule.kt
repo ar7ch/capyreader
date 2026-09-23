@@ -6,8 +6,12 @@ import com.capyreader.app.preferences.AppPreferences
 import com.capyreader.app.ui.addintent.AddLinkViewModel
 import com.capyreader.app.ui.articles.audio.AudioPlayerController
 import com.capyreader.app.ui.articles.feeds.edit.EditFeedViewModel
+import com.jocmp.capy.ai.SummaryQueue
 import com.jocmp.capy.articles.ArticleRenderer
 import com.jocmp.capy.articles.AudioPlayerLabels
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -47,6 +51,16 @@ internal val articlesModule = module {
             ),
         )
     }
+    single {
+        val appPreferences = get<AppPreferences>()
+
+        SummaryQueue(
+            account = get(),
+            summarizer = get(),
+            settings = { appPreferences.aiOptions.settings() },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+        )
+    }
     viewModel {
         val appPreferences = get<AppPreferences>()
 
@@ -55,7 +69,7 @@ internal val articlesModule = module {
             appPreferences = appPreferences,
             notificationHelper = get(),
             application = get(),
-            summarizer = get(),
+            summaryQueue = get(),
         )
     }
     viewModel {

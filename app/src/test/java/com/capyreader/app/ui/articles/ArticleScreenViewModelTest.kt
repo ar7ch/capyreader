@@ -38,6 +38,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import com.jocmp.capy.ai.ChatClient
 import com.jocmp.capy.ai.Summarizer
+import com.jocmp.capy.ai.SummaryQueue
+import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -236,7 +238,12 @@ class ArticleScreenViewModelTest {
             appPreferences = appPreferences,
             application = application,
             notificationHelper = notificationHelper,
-            summarizer = Summarizer(ChatClient(OkHttpClient()), OkHttpClient()),
+            summaryQueue = SummaryQueue(
+                account = account,
+                summarizer = Summarizer(ChatClient(OkHttpClient()), OkHttpClient()),
+                settings = { appPreferences.aiOptions.settings() },
+                scope = CoroutineScope(testDispatcher),
+            ),
             ioDispatcher = testDispatcher,
             syncFlushInterval = syncFlushInterval,
         )
