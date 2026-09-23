@@ -12,9 +12,11 @@ import okio.Buffer
 /**
  * Answers every call with a canned body and keeps the requests for assertions.
  */
-class RecordingInterceptor(private val responses: List<String>, private val code: Int = 200) :
-    Interceptor {
-    constructor(response: String, code: Int = 200) : this(listOf(response), code)
+class RecordingInterceptor(
+    private val responses: List<String>,
+    private val codes: List<Int> = listOf(200),
+) : Interceptor {
+    constructor(response: String, code: Int = 200) : this(listOf(response), listOf(code))
 
     val requests = mutableListOf<Request>()
 
@@ -28,6 +30,7 @@ class RecordingInterceptor(private val responses: List<String>, private val code
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val body = responses[minOf(requests.size, responses.size - 1)]
+        val code = codes[minOf(requests.size, codes.size - 1)]
 
         requests.add(request)
 

@@ -370,7 +370,10 @@ class ArticleRecords(
             )
         }
 
-        return ids.executeAsList()
+        // The queries order newest first; flip for the oldest-first list.
+        return ids.executeAsList().let { list ->
+            if (sortOrder == SortOrder.NEWEST_FIRST) list else list.reversed()
+        }
     }
 
     private fun folderFeedIDs(filter: ArticleFilter.Folders): List<String> {

@@ -13,6 +13,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockkObject
 import kotlinx.coroutines.test.runTest
+import java.time.ZonedDateTime
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import java.io.IOException
@@ -91,6 +92,29 @@ class AccountTest {
         )
 
         assertEquals(unreadArticleIDs.sorted(), ids.sorted())
+    }
+
+    @Test
+    fun unreadArticleIDs_newestFirst() = runTest {
+        val articleFixture = ArticleFixture(account.database)
+        val now = ZonedDateTime.now()
+
+        listOf(2L, 0L, 1L).forEach { daysAgo ->
+            articleFixture.create(
+                id = "id:$daysAgo",
+                read = false,
+                publishedAt = now.minusDays(daysAgo).toEpochSecond(),
+            )
+        }
+
+        val ids = account.unreadArticleIDs(
+            filter = ArticleFilter.Articles(ArticleStatus.ALL),
+            range = MarkRead.All,
+            sortOrder = SortOrder.NEWEST_FIRST,
+            query = null,
+        )
+
+        assertEquals(listOf("id:0", "id:1", "id:2"), ids)
     }
 
     /**

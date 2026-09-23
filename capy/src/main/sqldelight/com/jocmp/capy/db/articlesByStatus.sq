@@ -94,4 +94,5 @@ AND (
         ELSE articles.published_at > before_articles.published_at
              OR (articles.published_at = before_articles.published_at AND articles.id >= :beforeArticleID)
     END
-);
+)
+ORDER BY articles.published_at DESC, articles.id DESC;

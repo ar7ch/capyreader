@@ -473,9 +473,9 @@ private fun ArticleBox(
     }
 }
 
-private val SUMMARIZE_BUTTON_SIZE = 24.dp
+private val SUMMARIZE_BUTTON_SIZE = 40.dp
 
-private val SUMMARIZE_ICON_SIZE = 16.dp
+private val SUMMARIZE_ICON_SIZE = 22.dp
 
 private val SMALL_IMAGE_SIZE = 56.dp
 private val MEDIUM_IMAGE_SIZE = 84.dp

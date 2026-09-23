@@ -38,31 +38,25 @@ class ChatClient(httpClient: OkHttpClient) {
             return Result.failure(InvalidSettingsError("Model name is empty"))
         }
 
-        val payload = json.encodeToString(
-            ChatRequest(
-                model = settings.model,
-                messages = listOf(
-                    ChatMessage(role = "system", content = system),
-                    ChatMessage(role = "user", content = user),
-                ),
-            )
+        val request = ChatRequest(
+            model = settings.model,
+            messages = listOf(
+                ChatMessage(role = "system", content = system),
+                ChatMessage(role = "user", content = user),
+            ),
         )
 
-        val builder = Request.Builder()
-            .url(url)
-            .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-            .header("Content-Type", "application/json")
-            .header("Accept", "application/json")
-
-        val apiKey = settings.apiKey.trim()
-
-        if (apiKey.isNotBlank()) {
-            builder.header("Authorization", "Bearer $apiKey")
-        }
-
         return try {
-            val response = client.newCall(builder.build()).await()
-            val body = response.body.string()
+            var response = send(url, settings.apiKey, request)
+            var body = response.body.string()
+
+            // Summaries do not need chain of thought, and on Ollama a thinking model spends most
+            // of its time on it. Servers that do not know reasoning_effort for the model answer
+            // 400 and name the parameter; retry once without it.
+            if (response.code == 400 && body.contains(REASONING_EFFORT)) {
+                response = send(url, settings.apiKey, request.copy(reasoningEffort = null))
+                body = response.body.string()
+            }
 
             if (!response.isSuccessful) {
                 return Result.failure(HttpError(code = response.code, body = body.take(500)))
@@ -89,6 +83,20 @@ class ChatClient(httpClient: OkHttpClient) {
         }
     }
 
+    private suspend fun send(url: String, apiKey: String, request: ChatRequest): okhttp3.Response {
+        val builder = Request.Builder()
+            .url(url)
+            .post(json.encodeToString(request).toRequestBody(JSON_MEDIA_TYPE))
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+
+        if (apiKey.isNotBlank()) {
+            builder.header("Authorization", "Bearer ${apiKey.trim()}")
+        }
+
+        return client.newCall(builder.build()).await()
+    }
+
     class InvalidSettingsError(override val message: String) : Throwable(message)
 
     class HttpError(val code: Int, val body: String) : Throwable("HTTP $code")
@@ -98,10 +106,11 @@ class ChatClient(httpClient: OkHttpClient) {
     companion object {
         private const val READ_TIMEOUT_SECONDS = 300L
         private const val CALL_TIMEOUT_SECONDS = 360L
+        private const val REASONING_EFFORT = "reasoning_effort"
 
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
-        private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false }
 
         private val reasoningBlock =
             Regex("<think>.*?(</think>|$)", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
@@ -129,6 +138,8 @@ private data class ChatRequest(
     val messages: List<ChatMessage>,
     val temperature: Double = 0.2,
     val stream: Boolean = false,
+    @SerialName("reasoning_effort")
+    val reasoningEffort: String? = "none",
 )
 
 @Serializable

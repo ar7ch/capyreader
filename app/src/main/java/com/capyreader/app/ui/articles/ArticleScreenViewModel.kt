@@ -29,6 +29,7 @@ import com.jocmp.capy.Folder
 import com.jocmp.capy.MarkRead
 import com.jocmp.capy.SavedSearch
 import com.jocmp.capy.ai.Summary
+import com.jocmp.capy.articles.SortOrder
 import com.jocmp.capy.ai.SummaryQueue
 import com.jocmp.capy.ai.SummaryStatus
 import com.jocmp.capy.articles.ArticleContent
@@ -665,10 +666,11 @@ class ArticleScreenViewModel(
      */
     fun summarizeUnreadAsync() {
         viewModelScope.launchIO {
+            // Always newest first, whatever the list sort: fresh items are the ones worth reading.
             val articleIDs = account.unreadArticleIDs(
                 filter = latestFilter,
                 range = MarkRead.All,
-                sortOrder = sortOrder.value,
+                sortOrder = SortOrder.NEWEST_FIRST,
                 query = _searchQuery.value,
             )
 

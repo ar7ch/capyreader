@@ -34,8 +34,27 @@ class ChatClientTest {
         val body = interceptor.bodies.single()
 
         assertContains(body, "\"model\":\"test-model\"")
+        assertContains(body, "\"reasoning_effort\":\"none\"")
         assertContains(body, "system rules")
         assertContains(body, "<<<ARTICLE>>>")
+    }
+
+    @Test
+    fun complete_retriesWithoutReasoningEffortWhenRejected() = runTest {
+        val interceptor = RecordingInterceptor(
+            responses = listOf(
+                """{"error":{"message":"Unsupported parameter: 'reasoning_effort' is not supported with this model."}}""",
+                chatResponse("A short summary."),
+            ),
+            codes = listOf(400, 200),
+        )
+
+        val result = ChatClient(interceptor.client()).complete(settings, system = "s", user = "u")
+
+        assertEquals(expected = "A short summary.", actual = result.getOrThrow())
+        assertEquals(expected = 2, actual = interceptor.requests.size)
+        assertContains(interceptor.bodies[0], "reasoning_effort")
+        assertTrue(!interceptor.bodies[1].contains("reasoning_effort"))
     }
 
     @Test
