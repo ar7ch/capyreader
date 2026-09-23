@@ -145,14 +145,6 @@ fun ArticleListTopBar(
             }
         },
         actions = {
-            if (showSummarize) {
-                SummarizeUnreadButton(
-                    progress = summaryProgress,
-                    onSummarize = onSummarizeUnread,
-                    onCancel = onCancelSummaries,
-                )
-            }
-
             FilterActionMenu(
                 filter = filter,
                 currentFeed = currentFeed,
@@ -160,6 +152,15 @@ fun ArticleListTopBar(
                 onRequestSearch = { search.start() },
                 hideSearchIcon = enableSearch,
                 source = source,
+                afterMarkAllRead = {
+                    if (showSummarize) {
+                        SummarizeUnreadButton(
+                            progress = summaryProgress,
+                            onSummarize = onSummarizeUnread,
+                            onCancel = onCancelSummaries,
+                        )
+                    }
+                },
             )
         }
     )
