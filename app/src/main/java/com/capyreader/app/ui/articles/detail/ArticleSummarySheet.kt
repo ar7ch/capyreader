@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.ModalBottomSheet
@@ -24,6 +25,7 @@ import com.capyreader.app.ui.articles.ArticleScreenViewModel.SummaryState
 /**
  * Model output is untrusted text. It is rendered with [Text] so nothing in it can act as markup.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArticleSummarySheet(
     state: SummaryState,
