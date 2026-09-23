@@ -17,6 +17,8 @@ internal class ParsedItem(private val item: RssItem, private val siteURL: String
 
     val enclosures: List<Enclosure> = buildEnclosures()
 
+    val commentsURL: String? = cleanedURL(item.commentsUrl)?.toString()
+
     private fun buildEnclosures(): List<Enclosure> {
         val enclosures = item.enclosures.mapNotNull { enclosure ->
             val parsedUrl =

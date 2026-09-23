@@ -302,6 +302,7 @@ internal class LocalAccountDelegate(
                         image_url = parsedItem.imageURL,
                         published_at = publishedAt,
                         enclosure_type = enclosureType,
+                        comments_url = parsedItem.commentsURL,
                     )
 
                     articleRecords.createStatus(

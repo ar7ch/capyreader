@@ -20,6 +20,7 @@ class ArticleFixture(private val database: Database = InMemoryDatabaseProvider()
         starred: Boolean = false,
         url: String = "https://example.com/test-article",
         publishedAt: Long = TimeHelpers.nowUTC().toEpochSecond(),
+        commentsURL: String? = null,
     ): Article {
         database.transaction {
             database.articlesQueries.create(
@@ -33,7 +34,8 @@ class ArticleFixture(private val database: Database = InMemoryDatabaseProvider()
                 published_at = publishedAt,
                 summary = summary,
                 url = url,
-                enclosure_type = null
+                enclosure_type = null,
+                comments_url = commentsURL,
             )
             database.articlesQueries.createStatus(
                 article_id = id,

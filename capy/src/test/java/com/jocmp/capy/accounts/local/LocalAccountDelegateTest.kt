@@ -132,6 +132,30 @@ class LocalAccountDelegateTest {
     }
 
     @Test
+    fun refreshAll_savesCommentsURL() = runTest {
+        val commentsURL = "https://news.ycombinator.com/item?id=42"
+        val commentedItem = item.copy(commentsUrl = commentsURL)
+        val commentedChannel = channel.copy(items = listOf(commentedItem))
+
+        coEvery { feedFinder.fetch(url = any()) }.returns(
+            Result.success(
+                RssChannelResult(
+                    channel = commentedChannel,
+                    conditionalGet = ConditionalGetInfo.EMPTY
+                )
+            )
+        )
+
+        FeedFixture(database).create(feedID = commentedChannel.link!!)
+
+        delegate.refresh(ArticleFilter.default())
+
+        val article = ArticleRecords(database).find(articleID = commentedItem.link!!)
+
+        assertEquals(expected = commentsURL, actual = article?.commentsURL)
+    }
+
+    @Test
     fun refreshAll_updatesEntries_filteredByFilters() = runTest {
         accountPreferences.filterKeywords.set(setOf("Apple Intelligence"))
         coEvery { feedFinder.fetch(url = any()) }.returns(Result.success(RssChannelResult(channel = channel, conditionalGet = ConditionalGetInfo.EMPTY)))

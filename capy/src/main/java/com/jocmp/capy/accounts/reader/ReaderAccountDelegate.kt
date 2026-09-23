@@ -531,6 +531,7 @@ internal class ReaderAccountDelegate(
                         image_url = ReaderEnclosureParsing.parsedImageURL(item),
                         published_at = item.published,
                         enclosure_type = enclosureType,
+                        comments_url = null,
                     )
 
                 articleRecords.updateStatus(
