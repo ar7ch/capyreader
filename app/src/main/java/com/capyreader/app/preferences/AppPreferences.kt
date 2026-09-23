@@ -9,6 +9,7 @@ import com.capyreader.app.ui.articles.ArticleListFontScale
 import com.capyreader.app.ui.articles.DefaultPaneExpansionIndex
 import com.capyreader.app.ui.articles.MarkReadPosition
 import com.jocmp.capy.ArticleFilter
+import com.jocmp.capy.ai.AiSettings
 import com.jocmp.capy.articles.FontOption
 import com.jocmp.capy.articles.FontSize
 import com.jocmp.capy.articles.SortOrder
@@ -27,6 +28,8 @@ class AppPreferences(context: Context) {
     val readerOptions = ReaderOptions(preferenceStore)
 
     val articleListOptions = ArticleListOptions(preferenceStore)
+
+    val aiOptions = AiOptions(preferenceStore)
 
     val isLoggedIn
         get() = accountID.get().isNotBlank()
@@ -87,6 +90,32 @@ class AppPreferences(context: Context) {
 
     fun clearAll() {
         preferenceStore.clearAll()
+    }
+
+    class AiOptions(private val preferenceStore: PreferenceStore) {
+        val enabled: Preference<Boolean>
+            get() = preferenceStore.getBoolean("ai_summaries_enabled", false)
+
+        val baseURL: Preference<String>
+            get() = preferenceStore.getString("ai_base_url", DEFAULT_BASE_URL)
+
+        val apiKey: Preference<String>
+            get() = preferenceStore.getString("ai_api_key")
+
+        val model: Preference<String>
+            get() = preferenceStore.getString("ai_model", DEFAULT_MODEL)
+
+        fun settings() = AiSettings(
+            baseURL = baseURL.get().ifBlank { DEFAULT_BASE_URL },
+            apiKey = apiKey.get(),
+            model = model.get().trim(),
+        )
+
+        companion object {
+            const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
+
+            const val DEFAULT_MODEL = "gpt-4.1-mini"
+        }
     }
 
     class ReaderOptions(private val preferenceStore: PreferenceStore) {

@@ -12,6 +12,8 @@ import com.jocmp.capy.ClientCertManager
 import com.jocmp.capy.DatabaseProvider
 import com.jocmp.capy.PreferenceStoreProvider
 import com.jocmp.capy.accounts.httpClientBuilder
+import com.jocmp.capy.ai.ChatClient
+import com.jocmp.capy.ai.Summarizer
 import okhttp3.OkHttpClient
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -38,6 +40,8 @@ internal val common = module {
         )
     }
     single { AppPreferences(get()) }
+    single { ChatClient(httpClient = get()) }
+    single { Summarizer(chatClient = get(), httpClient = get()) }
     single { RefreshScheduler(get(), get()) }
 }
 

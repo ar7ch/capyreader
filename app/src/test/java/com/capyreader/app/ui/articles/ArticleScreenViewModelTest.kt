@@ -36,6 +36,9 @@ import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import com.jocmp.capy.ai.ChatClient
+import com.jocmp.capy.ai.Summarizer
+import okhttp3.OkHttpClient
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -233,6 +236,7 @@ class ArticleScreenViewModelTest {
             appPreferences = appPreferences,
             application = application,
             notificationHelper = notificationHelper,
+            summarizer = Summarizer(ChatClient(OkHttpClient()), OkHttpClient()),
             ioDispatcher = testDispatcher,
             syncFlushInterval = syncFlushInterval,
         )

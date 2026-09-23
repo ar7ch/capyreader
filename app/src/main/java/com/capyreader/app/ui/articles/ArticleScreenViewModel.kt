@@ -28,6 +28,8 @@ import com.jocmp.capy.Feed
 import com.jocmp.capy.Folder
 import com.jocmp.capy.MarkRead
 import com.jocmp.capy.SavedSearch
+import com.jocmp.capy.ai.Summarizer
+import com.jocmp.capy.ai.Summary
 import com.jocmp.capy.articles.ArticleContent
 import com.jocmp.capy.articles.SidebarItem
 import com.jocmp.capy.common.UnauthorizedError
@@ -60,12 +62,18 @@ class ArticleScreenViewModel(
     private val appPreferences: AppPreferences,
     private val application: Application,
     private val notificationHelper: NotificationHelper,
+    private val summarizer: Summarizer,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val syncFlushInterval: Duration? = SYNC_FLUSH_INTERVAL,
 ) : AndroidViewModel(application) {
     private var refreshJob: Job? = null
 
     private var fullContentJob: Job? = null
+
+    private var summaryJob: Job? = null
+
+    var summaryState by mutableStateOf<SummaryState>(SummaryState.Idle)
+        private set
 
     var refreshSkipReason by mutableStateOf<RefreshSkipReason?>(null)
         private set
@@ -578,6 +586,7 @@ class ArticleScreenViewModel(
         viewModelScope.launchIO {
             val article = buildArticle(articleID) ?: return@launchIO
             _article = article
+            resetSummary()
 
             launchIO {
                 markRead(articleID)
@@ -629,6 +638,70 @@ class ArticleScreenViewModel(
 
     fun clearArticle() {
         _article = null
+        resetSummary()
+    }
+
+    val aiSummariesEnabled: Boolean
+        get() = appPreferences.aiOptions.enabled.get()
+
+    /**
+     * Reads the stored summary first. Only a regenerate request, or a missing row, reaches the model.
+     */
+    fun summarizeAsync(regenerate: Boolean = false) {
+        val article = _article ?: return
+
+        if (summaryState == SummaryState.Loading) {
+            return
+        }
+
+        summaryJob?.cancel()
+        summaryState = SummaryState.Loading
+
+        summaryJob = viewModelScope.launchIO {
+            val stored = if (regenerate) null else account.findSummary(article.id)
+
+            if (stored != null) {
+                summaryState = SummaryState.Success(stored)
+                return@launchIO
+            }
+
+            val settings = appPreferences.aiOptions.settings()
+
+            val pageHTML = if (article.fullContent == Article.FullContentState.LOADED) {
+                article.content
+            } else {
+                account.fetchFullContent(article).getOrNull()
+            }
+
+            summarizer.summarize(settings = settings, article = article, pageHTML = pageHTML).fold(
+                onSuccess = { summary ->
+                    account.saveSummary(article.id, summary, model = settings.model)
+
+                    if (_article?.id == article.id) {
+                        summaryState = SummaryState.Success(summary)
+                    }
+                },
+                onFailure = { error ->
+                    CapyLog.warn(
+                        "summarize",
+                        mapOf(
+                            "error_type" to error::class.simpleName,
+                            "error_message" to error.message
+                        )
+                    )
+
+                    if (_article?.id == article.id) {
+                        summaryState = SummaryState.Error(error.message.orEmpty())
+                    }
+                }
+            )
+        }
+    }
+
+    private fun resetSummary() {
+        summaryJob?.cancel()
+        summaryJob = null
+        summaryState = SummaryState.Idle
     }
 
     fun startSearch() {
@@ -931,6 +1004,16 @@ class ArticleScreenViewModel(
             },
             onFailure = { Result.failure(it) }
         )
+    }
+
+    sealed interface SummaryState {
+        data object Idle : SummaryState
+
+        data object Loading : SummaryState
+
+        data class Success(val summary: Summary) : SummaryState
+
+        data class Error(val message: String) : SummaryState
     }
 
     enum class UnauthorizedMessageState {

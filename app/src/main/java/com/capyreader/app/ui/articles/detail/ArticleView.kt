@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import com.capyreader.app.preferences.ArticleVerticalSwipe.NEXT_ARTICLE
 import com.capyreader.app.preferences.ArticleVerticalSwipe.OPEN_ARTICLE_IN_BROWSER
 import com.capyreader.app.preferences.ArticleVerticalSwipe.PREVIOUS_ARTICLE
 import com.capyreader.app.ui.LocalLinkOpener
+import com.capyreader.app.ui.articles.ArticleScreenViewModel.SummaryState
 import com.capyreader.app.ui.articles.LocalFullContent
 import com.capyreader.app.ui.collectChangesWithDefault
 import com.capyreader.app.ui.components.pullrefresh.SwipeRefresh
@@ -65,6 +67,9 @@ fun ArticleView(
     isAudioPlaying: Boolean = false,
     isFullscreen: Boolean = false,
     onToggleFullscreen: () -> Unit = {},
+    showSummarize: Boolean = false,
+    summaryState: SummaryState = SummaryState.Idle,
+    onSummarize: (regenerate: Boolean) -> Unit = {},
     appPreferences: AppPreferences = koinInject()
 ) {
     val enableHorizontalPager by appPreferences.readerOptions.enableHorizontaPagination.collectChangesWithDefault()
@@ -131,6 +136,12 @@ fun ArticleView(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val (summaryOpen, setSummaryOpen) = remember { mutableStateOf(false) }
+
+    LaunchedEffect(article.id) {
+        setSummaryOpen(false)
+    }
+
     val contentPadding = rememberContentPadding(pinToolbars)
 
     CompositionLocalProvider(
@@ -195,10 +206,25 @@ fun ArticleView(
                 article = article,
                 hasNextArticle = hasNext,
                 onToggleExtractContent = onToggleFullContent,
+                showSummarize = showSummarize,
+                isSummarizing = summaryState == SummaryState.Loading,
+                onSummarize = {
+                    setSummaryOpen(true)
+                    onSummarize(false)
+                },
                 onToggleRead = onToggleRead,
                 onToggleStar = onToggleStar,
                 onSelectNext = { selectNext() },
             )
+
+            if (summaryOpen) {
+                ArticleSummarySheet(
+                    state = summaryState,
+                    onDismissRequest = { setSummaryOpen(false) },
+                    onRetry = { onSummarize(false) },
+                    onRegenerate = { onSummarize(true) },
+                )
+            }
 
             SnackbarHost(
                 hostState = snackbarHostState,
