@@ -1,6 +1,7 @@
 package com.jocmp.capy.ai
 
 import com.jocmp.capy.Article
+import com.jocmp.capy.logging.CapyLog
 import okhttp3.OkHttpClient
 
 data class Summary(
@@ -49,7 +50,14 @@ class Summarizer(
      * A missing or broken comment thread leaves the article summary alone.
      */
     private suspend fun discussionSummary(settings: AiSettings, article: Article): String? {
-        val thread = Discussion.fetch(article.commentsURL, httpClient).getOrNull() ?: return null
+        val thread = Discussion.fetch(article.commentsURL, httpClient)
+            .onFailure {
+                CapyLog.warn(
+                    "discussion",
+                    mapOf("error_type" to it::class.simpleName, "error_message" to it.message)
+                )
+            }
+            .getOrNull() ?: return null
 
         return chatClient.complete(
             settings = settings,

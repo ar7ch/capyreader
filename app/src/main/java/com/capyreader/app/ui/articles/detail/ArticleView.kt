@@ -47,6 +47,7 @@ import com.capyreader.app.ui.collectChangesWithDefault
 import com.capyreader.app.ui.components.pullrefresh.SwipeRefresh
 import com.capyreader.app.ui.components.LocalSnackbarHost
 import com.jocmp.capy.Article
+import com.jocmp.capy.ai.Discussion
 import org.koin.compose.koinInject
 
 @Composable
@@ -220,6 +221,7 @@ fun ArticleView(
             if (summaryOpen) {
                 ArticleSummarySheet(
                     state = summaryState,
+                    hasDiscussionSite = Discussion.supports(article.commentsURL),
                     onDismissRequest = { setSummaryOpen(false) },
                     onRetry = { onSummarize(false) },
                     onRegenerate = { onSummarize(true) },

@@ -54,6 +54,9 @@ object Discussion {
         }
     }
 
+    /** True when the comments URL points at a site with a comment API. */
+    fun supports(commentsURL: String?): Boolean = apiURL(commentsURL) != null
+
     internal fun apiURL(commentsURL: String?): String? {
         val url = commentsURL?.trim().orEmpty().toHttpUrlOrNull() ?: return null
 

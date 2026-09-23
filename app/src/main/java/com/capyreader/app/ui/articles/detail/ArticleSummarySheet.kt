@@ -29,6 +29,7 @@ import com.capyreader.app.ui.articles.ArticleScreenViewModel.SummaryState
 @Composable
 fun ArticleSummarySheet(
     state: SummaryState,
+    hasDiscussionSite: Boolean,
     onDismissRequest: () -> Unit,
     onRetry: () -> Unit,
     onRegenerate: () -> Unit,
@@ -74,12 +75,23 @@ fun ArticleSummarySheet(
                     )
                     Text(text = state.summary.article)
 
-                    state.summary.discussion?.let { discussion ->
+                    val discussion = state.summary.discussion
+
+                    if (discussion != null || hasDiscussionSite) {
                         Text(
                             text = stringResource(R.string.article_summary_discussion_title),
                             style = typography.titleMedium,
                         )
+                    }
+
+                    if (discussion != null) {
                         Text(text = discussion)
+                    } else if (hasDiscussionSite) {
+                        Text(
+                            text = stringResource(R.string.article_summary_discussion_unavailable),
+                            style = typography.bodyMedium,
+                            color = colorScheme.onSurfaceVariant,
+                        )
                     }
 
                     Text(
