@@ -40,6 +40,58 @@ class ChatClientTest {
     }
 
     @Test
+    fun complete_readsStreamedDeltas() = runTest {
+        val interceptor = RecordingInterceptor(
+            chatStream(listOf("The release ", "adds incremental ", "backups.")),
+            contentType = RecordingInterceptor.EVENT_STREAM_CONTENT_TYPE,
+        )
+        val deltas = mutableListOf<String>()
+
+        val result = ChatClient(interceptor.client())
+            .complete(settings, system = "s", user = "u", onDelta = { deltas.add(it) })
+
+        assertEquals(expected = "The release adds incremental backups.", actual = result.getOrThrow())
+        assertEquals(
+            expected = listOf(
+                "The release",
+                "The release adds incremental",
+                "The release adds incremental backups.",
+            ),
+            actual = deltas,
+        )
+        assertContains(interceptor.bodies.single(), "\"stream\":true")
+    }
+
+    @Test
+    fun complete_readsAPlainJSONBodyWhenTheServerIgnoresStreaming() = runTest {
+        val interceptor = RecordingInterceptor(chatResponse("A short summary."))
+        val deltas = mutableListOf<String>()
+
+        val result = ChatClient(interceptor.client())
+            .complete(settings, system = "s", user = "u", onDelta = { deltas.add(it) })
+
+        assertEquals(expected = "A short summary.", actual = result.getOrThrow())
+        assertTrue(deltas.isEmpty())
+    }
+
+    @Test
+    fun complete_keepsStreamedReasoningOutOfTheDeltas() = runTest {
+        val interceptor = RecordingInterceptor(
+            chatStream(
+                listOf("<thi", "nk>", "Maybe the ", "second option", "</think>", "Caching ", "is explained.")
+            ),
+            contentType = RecordingInterceptor.EVENT_STREAM_CONTENT_TYPE,
+        )
+        val deltas = mutableListOf<String>()
+
+        val result = ChatClient(interceptor.client())
+            .complete(settings, system = "s", user = "u", onDelta = { deltas.add(it) })
+
+        assertEquals(expected = "Caching is explained.", actual = result.getOrThrow())
+        assertEquals(expected = listOf("Caching", "Caching is explained."), actual = deltas)
+    }
+
+    @Test
     fun complete_retriesWithoutReasoningEffortWhenRejected() = runTest {
         val interceptor = RecordingInterceptor(
             responses = listOf(

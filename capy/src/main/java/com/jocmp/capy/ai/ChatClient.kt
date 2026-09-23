@@ -1,6 +1,8 @@
 package com.jocmp.capy.ai
 
 import com.jocmp.capy.common.await
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -9,6 +11,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okhttp3.ResponseBody
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -30,7 +34,16 @@ class ChatClient(httpClient: OkHttpClient) {
         .callTimeout(CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
 
-    suspend fun complete(settings: AiSettings, system: String, user: String): Result<String> {
+    /**
+     * [onDelta] is called with the whole answer so far each time more of it arrives, so a caller
+     * can replace whatever it is showing with the new text.
+     */
+    suspend fun complete(
+        settings: AiSettings,
+        system: String,
+        user: String,
+        onDelta: (String) -> Unit = {},
+    ): Result<String> {
         val url = completionsURL(settings.baseURL)
             ?: return Result.failure(InvalidSettingsError("Base URL is not a valid http or https URL"))
 
@@ -48,28 +61,27 @@ class ChatClient(httpClient: OkHttpClient) {
 
         return try {
             var response = send(url, settings.apiKey, request)
-            var body = response.body.string()
 
             // Summaries do not need chain of thought, and on Ollama a thinking model spends most
             // of its time on it. Servers that do not know reasoning_effort for the model answer
             // 400 and name the parameter; retry once without it.
-            if (response.code == 400 && body.contains(REASONING_EFFORT)) {
+            if (response.code == 400) {
+                val body = response.body.string()
+
+                if (!body.contains(REASONING_EFFORT)) {
+                    return Result.failure(HttpError(code = 400, body = body.take(500)))
+                }
+
                 response = send(url, settings.apiKey, request.copy(reasoningEffort = null))
-                body = response.body.string()
             }
 
             if (!response.isSuccessful) {
+                val body = response.body.string()
+
                 return Result.failure(HttpError(code = response.code, body = body.take(500)))
             }
 
-            val content = json.decodeFromString<ChatResponse>(body)
-                .choices
-                .firstOrNull()
-                ?.message
-                ?.content
-                .orEmpty()
-
-            val cleaned = stripReasoning(content)
+            val cleaned = stripReasoning(read(response, onDelta))
 
             if (cleaned.isBlank()) {
                 Result.failure(EmptyResponseError())
@@ -83,18 +95,67 @@ class ChatClient(httpClient: OkHttpClient) {
         }
     }
 
-    private suspend fun send(url: String, apiKey: String, request: ChatRequest): okhttp3.Response {
+    private suspend fun send(url: String, apiKey: String, request: ChatRequest): Response {
         val builder = Request.Builder()
             .url(url)
             .post(json.encodeToString(request).toRequestBody(JSON_MEDIA_TYPE))
             .header("Content-Type", "application/json")
-            .header("Accept", "application/json")
+            .header("Accept", "text/event-stream, application/json")
 
         if (apiKey.isNotBlank()) {
             builder.header("Authorization", "Bearer ${apiKey.trim()}")
         }
 
         return client.newCall(builder.build()).await()
+    }
+
+    private suspend fun read(response: Response, onDelta: (String) -> Unit): String {
+        val body = response.body
+
+        // Some proxies ignore the stream flag and answer with one JSON document.
+        if (body.contentType()?.subtype?.lowercase() != EVENT_STREAM_SUBTYPE) {
+            return content(body.string())
+        }
+
+        return withContext(Dispatchers.IO) { readEventStream(body, onDelta) }
+    }
+
+    private fun readEventStream(body: ResponseBody, onDelta: (String) -> Unit): String {
+        val answer = StringBuilder()
+        var emitted = ""
+
+        body.source().use { source ->
+            while (true) {
+                val line = source.readUtf8Line() ?: break
+
+                if (!line.startsWith(DATA_PREFIX)) {
+                    continue
+                }
+
+                val payload = line.removePrefix(DATA_PREFIX).trim()
+
+                if (payload == DONE_PAYLOAD) {
+                    break
+                }
+
+                val delta = deltaContent(payload)
+
+                if (delta.isEmpty()) {
+                    continue
+                }
+
+                answer.append(delta)
+
+                val visible = emittable(answer.toString())
+
+                if (visible != null && visible != emitted) {
+                    emitted = visible
+                    onDelta(visible)
+                }
+            }
+        }
+
+        return answer.toString()
     }
 
     class InvalidSettingsError(override val message: String) : Throwable(message)
@@ -107,6 +168,11 @@ class ChatClient(httpClient: OkHttpClient) {
         private const val READ_TIMEOUT_SECONDS = 300L
         private const val CALL_TIMEOUT_SECONDS = 360L
         private const val REASONING_EFFORT = "reasoning_effort"
+        private const val EVENT_STREAM_SUBTYPE = "event-stream"
+        private const val DATA_PREFIX = "data:"
+        private const val DONE_PAYLOAD = "[DONE]"
+
+        private val THINK_TAGS = listOf("<think>", "</think>")
 
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
@@ -129,6 +195,52 @@ class ChatClient(httpClient: OkHttpClient) {
         internal fun stripReasoning(content: String): String {
             return content.replace(reasoningBlock, "").trim()
         }
+
+        private fun content(body: String): String {
+            return json.decodeFromString<ChatResponse>(body)
+                .choices
+                .firstOrNull()
+                ?.message
+                ?.content
+                .orEmpty()
+        }
+
+        private fun deltaContent(payload: String): String {
+            return runCatching { json.decodeFromString<ChatStreamChunk>(payload) }
+                .getOrNull()
+                ?.choices
+                ?.firstOrNull()
+                ?.delta
+                ?.content
+                .orEmpty()
+        }
+
+        /**
+         * The answer to show while it is still arriving, or null when there is nothing to show yet.
+         * Scratch work is dropped as it comes in rather than shown and taken back, and a half
+         * written think tag waits for the rest of itself.
+         */
+        internal fun emittable(answer: String): String? {
+            if (holdsPartialTag(answer)) {
+                return null
+            }
+
+            return stripReasoning(answer).ifBlank { null }
+        }
+
+        private fun holdsPartialTag(answer: String): Boolean {
+            val opened = answer.lastIndexOf('<')
+
+            if (opened == -1) {
+                return false
+            }
+
+            val tail = answer.substring(opened)
+
+            return THINK_TAGS.any { tag ->
+                tag.length > tail.length && tag.startsWith(tail, ignoreCase = true)
+            }
+        }
     }
 }
 
@@ -137,7 +249,7 @@ private data class ChatRequest(
     val model: String,
     val messages: List<ChatMessage>,
     val temperature: Double = 0.2,
-    val stream: Boolean = false,
+    val stream: Boolean = true,
     @SerialName("reasoning_effort")
     val reasoningEffort: String? = "none",
 )
@@ -156,4 +268,20 @@ private data class ChatResponse(
 @Serializable
 private data class ChatChoice(
     val message: ChatMessage? = null,
+)
+
+@Serializable
+private data class ChatStreamChunk(
+    @SerialName("choices") val choices: List<ChatStreamChoice> = emptyList(),
+)
+
+@Serializable
+private data class ChatStreamChoice(
+    val delta: ChatMessageDelta? = null,
+)
+
+/** Only the answer is read back; a model's reasoning fields are left alone. */
+@Serializable
+private data class ChatMessageDelta(
+    val content: String? = null,
 )
