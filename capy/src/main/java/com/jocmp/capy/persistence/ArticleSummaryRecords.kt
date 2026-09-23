@@ -1,13 +1,25 @@
 package com.jocmp.capy.persistence
 
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
 import com.jocmp.capy.ai.Summary
 import com.jocmp.capy.common.TimeHelpers.nowUTC
 import com.jocmp.capy.common.withIOContext
 import com.jocmp.capy.db.Database
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 
 class ArticleSummaryRecords internal constructor(
     private val database: Database
 ) {
+    /** The articles with a summary on disk, so a list can show which ones are already done. */
+    fun articleIDs(): Flow<List<String>> {
+        return database.article_summariesQueries
+            .allArticleIDs()
+            .asFlow()
+            .mapToList(Dispatchers.IO)
+    }
+
     suspend fun find(articleID: String): Summary? = withIOContext {
         database.article_summariesQueries
             .findBy(articleID) { summary, discussion, _, _ ->

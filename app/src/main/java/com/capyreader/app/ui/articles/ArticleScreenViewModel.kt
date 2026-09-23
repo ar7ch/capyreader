@@ -1012,7 +1012,9 @@ class ArticleScreenViewModel(
 fun summaryState(status: SummaryStatus?): ArticleScreenViewModel.SummaryState {
     return when (status) {
         null -> ArticleScreenViewModel.SummaryState.Idle
-        SummaryStatus.Queued, SummaryStatus.Running -> ArticleScreenViewModel.SummaryState.Loading
+        SummaryStatus.Queued,
+        SummaryStatus.Running,
+        SummaryStatus.Stored -> ArticleScreenViewModel.SummaryState.Loading
         is SummaryStatus.Done -> ArticleScreenViewModel.SummaryState.Success(status.summary)
         is SummaryStatus.Failed -> ArticleScreenViewModel.SummaryState.Error(status.message)
     }

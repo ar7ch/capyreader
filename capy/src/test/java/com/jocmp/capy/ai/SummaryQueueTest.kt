@@ -84,18 +84,50 @@ class SummaryQueueTest {
     }
 
     @Test
-    fun enqueue_keepsAStoredSummary() = runTest {
+    fun states_reportsSummariesAlreadyOnDisk() = runTest {
         val articleIDs = createArticles("1")
-        val stored = Summary(article = "Stored summary", discussion = "Stored discussion")
-        account.saveSummary(articleID = "1", summary = stored, model = "old-model")
+        account.saveSummary(
+            articleID = "1",
+            summary = Summary(article = "Stored summary"),
+            model = "old-model",
+        )
         succeedAll()
         val queue = buildQueue()
 
-        queue.enqueue(articleIDs)
-        queue.awaitSettled(articleIDs)
+        queue.states.first { it["1"] == SummaryStatus.Stored }
 
-        assertEquals(expected = SummaryStatus.Done(stored), actual = queue.states.value["1"])
+        queue.enqueue(articleIDs)
+        advanceUntilIdle()
+
+        assertEquals(expected = SummaryStatus.Stored, actual = queue.states.value["1"])
+        assertNull(queue.progress.value)
         coVerify(exactly = 0) { summarizer.summarize(any(), any(), any()) }
+    }
+
+    @Test
+    fun prioritize_readsAStoredSummaryWhileTheQueueIsBusy() = runTest {
+        createArticles("1", "2")
+        val stored = Summary(article = "Stored summary", discussion = "Stored discussion")
+        account.saveSummary(articleID = "1", summary = stored, model = "old-model")
+        val gate = CompletableDeferred<Unit>()
+        succeedAll(holdBack = "2", gate = gate)
+        val queue = buildQueue()
+
+        queue.states.first { it["1"] == SummaryStatus.Stored }
+
+        queue.enqueue(listOf("2"))
+        queue.states.first { it["2"] == SummaryStatus.Running }
+
+        queue.prioritize("1")
+
+        assertEquals(
+            expected = SummaryStatus.Done(stored),
+            actual = queue.states.first { it["1"] is SummaryStatus.Done }["1"],
+        )
+        assertEquals(expected = SummaryStatus.Running, actual = queue.states.value["2"])
+        coVerify(exactly = 0) { summarizer.summarize(any(), match { it.id == "1" }, any()) }
+
+        gate.complete(Unit)
     }
 
     @Test

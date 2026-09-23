@@ -293,11 +293,15 @@ private fun SummarizeArticleButton(
             Icon(
                 Icons.Rounded.AutoAwesome,
                 contentDescription = stringResource(R.string.article_list_summarize),
-                tint = if (status is SummaryStatus.Done) colorScheme.primary else tint,
+                tint = if (hasSummary(status)) colorScheme.primary else tint,
                 modifier = Modifier.size(SUMMARIZE_ICON_SIZE)
             )
         }
     }
+}
+
+private fun hasSummary(status: SummaryStatus?): Boolean {
+    return status is SummaryStatus.Done || status == SummaryStatus.Stored
 }
 
 @Composable

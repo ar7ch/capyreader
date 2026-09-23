@@ -28,3 +28,6 @@ created_at = excluded.created_at;
 
 deleteBy:
 DELETE FROM article_summaries WHERE article_id = :articleID;
+
+allArticleIDs:
+SELECT article_id FROM article_summaries;

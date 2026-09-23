@@ -406,6 +406,9 @@ data class Account(
         return articleContent.fetch(article.url)
     }
 
+    val summarizedArticleIDs: Flow<List<String>>
+        get() = articleSummaryRecords.articleIDs()
+
     suspend fun findSummary(articleID: String): Summary? {
         return articleSummaryRecords.find(articleID)
     }

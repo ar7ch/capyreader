@@ -16,6 +16,9 @@ sealed interface SummaryStatus {
 
     data object Running : SummaryStatus
 
+    /** A summary is on disk. Reading it takes one query, so it is not loaded until asked for. */
+    data object Stored : SummaryStatus
+
     data class Done(val summary: Summary) : SummaryStatus
 
     data class Failed(val message: String) : SummaryStatus
@@ -30,8 +33,8 @@ data class SummaryProgress(
  * Summarizes articles one at a time in the order they were asked for. Local models answer one
  * request at a time anyway, and a queue keeps the list and the open article from competing.
  *
- * A stored summary is handed back without calling the model. A failure marks its own article and
- * the queue moves on to the next one.
+ * A stored summary is handed back without calling the model, and without waiting behind whatever
+ * the queue is working on. A failure marks its own article and the queue moves on to the next one.
  *
  * NOTE: the queue lives only as long as the process. Nothing about it is written down, so whatever
  * is still waiting when the app goes away is dropped.
@@ -48,6 +51,11 @@ class SummaryQueue(
 
     private val regenerating = mutableSetOf<String>()
 
+    /** What this session did, which outranks what is on disk. */
+    private val handled = mutableMapOf<String, SummaryStatus>()
+
+    private var storedArticleIDs = emptySet<String>()
+
     private var worker: Job? = null
 
     private var running: String? = null
@@ -62,14 +70,25 @@ class SummaryQueue(
 
     val progress: StateFlow<SummaryProgress?> = _progress.asStateFlow()
 
+    init {
+        scope.launch {
+            account.summarizedArticleIDs.collect { articleIDs ->
+                synchronized(lock) {
+                    storedArticleIDs = articleIDs.toSet()
+                    publishStates()
+                }
+            }
+        }
+    }
+
     /**
      * Appends ids to the back of the queue. Articles already waiting, running, or summarized are
-     * left alone.
+     * left alone. An article that failed earlier is tried again.
      */
     fun enqueue(articleIDs: List<String>) {
         synchronized(lock) {
             articleIDs.forEach { articleID ->
-                if (!isTracked(articleID)) {
+                if (!isSettled(articleID)) {
                     pending.addLast(articleID)
                     setStatus(articleID, SummaryStatus.Queued)
                 }
@@ -82,17 +101,23 @@ class SummaryQueue(
     }
 
     /**
-     * Puts one article at the front of the queue. An article that already has a summary stays
-     * where it is unless [regenerate] asks for a new one.
+     * Puts one article at the front of the queue. A summary that is already in hand is read back
+     * instead, unless [regenerate] asks for a new one.
      */
     fun prioritize(articleID: String, regenerate: Boolean = false) {
-        synchronized(lock) {
-            val status = _states.value[articleID]
+        if (!regenerate) {
+            when (status(articleID)) {
+                SummaryStatus.Running, is SummaryStatus.Done -> return
+                SummaryStatus.Stored -> {
+                    load(articleID)
+                    return
+                }
 
-            if (status == SummaryStatus.Running || (status is SummaryStatus.Done && !regenerate)) {
-                return
+                else -> {}
             }
+        }
 
+        synchronized(lock) {
             if (regenerate) {
                 regenerating.add(articleID)
             }
@@ -114,12 +139,28 @@ class SummaryQueue(
             running = null
             completed = 0
             _progress.value = null
-            _states.value = _states.value.filterValues { it !is SummaryStatus.Queued && it !is SummaryStatus.Running }
+            handled.entries.removeAll {
+                it.value == SummaryStatus.Queued || it.value == SummaryStatus.Running
+            }
+            publishStates()
 
             worker.also { worker = null }
         }
 
         current?.cancel()
+    }
+
+    /** Reads a summary that is already on disk, without waiting for the queue. */
+    private fun load(articleID: String) {
+        scope.launch {
+            val stored = account.findSummary(articleID)
+
+            if (stored == null) {
+                prioritize(articleID, regenerate = true)
+            } else {
+                setStatus(articleID, SummaryStatus.Done(stored))
+            }
+        }
     }
 
     private fun start() {
@@ -220,15 +261,28 @@ class SummaryQueue(
     }
 
     private fun setStatus(articleID: String, status: SummaryStatus) = synchronized(lock) {
-        _states.value = _states.value + (articleID to status)
+        handled[articleID] = status
+        publishStates()
     }
 
-    private fun isTracked(articleID: String): Boolean {
-        val status = _states.value[articleID]
+    private fun isSettled(articleID: String): Boolean = when (status(articleID)) {
+        SummaryStatus.Queued,
+        SummaryStatus.Running,
+        SummaryStatus.Stored,
+        is SummaryStatus.Done -> true
 
-        return status == SummaryStatus.Queued ||
-                status == SummaryStatus.Running ||
-                status is SummaryStatus.Done
+        else -> false
+    }
+
+    private fun status(articleID: String): SummaryStatus? = synchronized(lock) {
+        handled[articleID] ?: SummaryStatus.Stored.takeIf { storedArticleIDs.contains(articleID) }
+    }
+
+    private fun publishStates() {
+        val stored = storedArticleIDs.filterNot(handled::containsKey)
+            .associateWith { SummaryStatus.Stored }
+
+        _states.value = stored + handled
     }
 
     private fun publishProgress() {
