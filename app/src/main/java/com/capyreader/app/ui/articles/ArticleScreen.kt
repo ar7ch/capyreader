@@ -190,6 +190,7 @@ fun ArticleScreen(
 
     val summaryQueue = koinInject<SummaryQueue>()
     val summaryStates by summaryQueue.states.collectAsStateWithLifecycle()
+    val summaryProgress by summaryQueue.progress.collectAsStateWithLifecycle()
     val summarizeEnabled = viewModel.aiSummariesEnabled
     var summarizedArticle by remember { mutableStateOf<Article?>(null) }
 
@@ -563,6 +564,10 @@ fun ArticleScreen(
                                 savedSearches = savedSearches,
                                 folders = allFolders,
                                 source = viewModel.source,
+                                showSummarize = summarizeEnabled,
+                                summaryProgress = summaryProgress,
+                                onSummarizeUnread = { viewModel.summarizeUnreadAsync() },
+                                onCancelSummaries = { summaryQueue.cancelAll() },
                             )
                         },
                         snackbarHost = {
