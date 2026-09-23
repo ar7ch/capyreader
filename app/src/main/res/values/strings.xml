@@ -86,6 +86,11 @@
     <string name="article_summary_regenerate">Regenerate</string>
     <string name="article_summary_retry">Try again</string>
     <string name="article_summary_error">The summary could not be generated.</string>
+    <string name="article_summary_stage_queued">Waiting in queue…</string>
+    <string name="article_summary_stage_fetching_page">Fetching the page…</string>
+    <string name="article_summary_stage_summarizing_article">Summarizing the article…</string>
+    <string name="article_summary_stage_fetching_comments">Fetching the comment thread…</string>
+    <string name="article_summary_stage_summarizing_discussion">Summarizing the discussion…</string>
     <string name="article_list_summarize">Summarize</string>
     <string name="article_list_summarize_unread">Summarize unread</string>
     <string name="article_list_summarizing_progress">Summarizing %1$d of %2$d</string>

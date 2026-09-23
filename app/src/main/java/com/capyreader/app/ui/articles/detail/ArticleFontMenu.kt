@@ -85,7 +85,7 @@ private fun Context.translationKey(option: FontOption): String {
     }
 }
 
-private fun findFont(fontOption: FontOption) = when (fontOption) {
+internal fun findFont(fontOption: FontOption) = when (fontOption) {
     FontOption.SYSTEM_DEFAULT -> null
     FontOption.ATKINSON_HYPERLEGIBLE -> Font(resId = R.font.atkinson_hyperlegible)
     FontOption.INTER -> Font(resId = R.font.inter)

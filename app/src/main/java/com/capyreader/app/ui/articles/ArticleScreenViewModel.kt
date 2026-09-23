@@ -31,6 +31,7 @@ import com.jocmp.capy.SavedSearch
 import com.jocmp.capy.ai.Summary
 import com.jocmp.capy.articles.SortOrder
 import com.jocmp.capy.ai.SummaryQueue
+import com.jocmp.capy.ai.SummaryStage
 import com.jocmp.capy.ai.SummaryStatus
 import com.jocmp.capy.articles.ArticleContent
 import com.jocmp.capy.articles.SidebarItem
@@ -993,7 +994,11 @@ class ArticleScreenViewModel(
     sealed interface SummaryState {
         data object Idle : SummaryState
 
-        data object Loading : SummaryState
+        /** [partial] is the summary as far as the model has written it, when there is any yet. */
+        data class Loading(
+            val partial: Summary? = null,
+            val stage: SummaryStage? = null,
+        ) : SummaryState
 
         data class Success(val summary: Summary) : SummaryState
 
@@ -1015,8 +1020,11 @@ fun summaryState(status: SummaryStatus?): ArticleScreenViewModel.SummaryState {
     return when (status) {
         null -> ArticleScreenViewModel.SummaryState.Idle
         SummaryStatus.Queued,
-        is SummaryStatus.Running,
-        SummaryStatus.Stored -> ArticleScreenViewModel.SummaryState.Loading
+        SummaryStatus.Stored -> ArticleScreenViewModel.SummaryState.Loading()
+        is SummaryStatus.Running -> ArticleScreenViewModel.SummaryState.Loading(
+            partial = status.partial,
+            stage = status.stage,
+        )
         is SummaryStatus.Done -> ArticleScreenViewModel.SummaryState.Success(status.summary)
         is SummaryStatus.Failed -> ArticleScreenViewModel.SummaryState.Error(status.message)
     }

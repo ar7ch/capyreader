@@ -208,7 +208,7 @@ fun ArticleView(
                 hasNextArticle = hasNext,
                 onToggleExtractContent = onToggleFullContent,
                 showSummarize = showSummarize,
-                isSummarizing = summaryState == SummaryState.Loading,
+                isSummarizing = summaryState is SummaryState.Loading,
                 onSummarize = {
                     setSummaryOpen(true)
                     onSummarize(false)
