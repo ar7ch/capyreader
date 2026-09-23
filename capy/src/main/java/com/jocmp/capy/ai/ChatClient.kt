@@ -96,8 +96,8 @@ class ChatClient(httpClient: OkHttpClient) {
     class EmptyResponseError : Throwable("The model returned an empty response")
 
     companion object {
-        private const val READ_TIMEOUT_SECONDS = 180L
-        private const val CALL_TIMEOUT_SECONDS = 240L
+        private const val READ_TIMEOUT_SECONDS = 300L
+        private const val CALL_TIMEOUT_SECONDS = 360L
 
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
