@@ -62,7 +62,6 @@ import com.capyreader.app.ui.LocalTimeFormats
 import com.capyreader.app.ui.LocalUnreadCount
 import com.capyreader.app.ui.articles.audio.AudioPlayerController
 import com.capyreader.app.ui.articles.audio.FloatingAudioPlayer
-import com.capyreader.app.ui.articles.detail.ArticleSummarySheet
 import com.capyreader.app.ui.articles.detail.ArticleView
 import com.capyreader.app.ui.articles.detail.CapyPlaceholder
 import com.capyreader.app.ui.articles.feeds.AngleRefreshState
@@ -98,8 +97,6 @@ import com.jocmp.capy.Feed
 import com.jocmp.capy.Folder
 import com.jocmp.capy.MarkRead
 import com.jocmp.capy.SavedSearch
-import com.jocmp.capy.ai.Discussion
-import com.jocmp.capy.ai.SummaryQueue
 import com.jocmp.capy.common.launchIO
 import com.jocmp.capy.common.launchUI
 import com.jocmp.capy.logging.CapyLog
@@ -187,12 +184,6 @@ fun ArticleScreen(
     )
 
     val snackbarHostState = remember { SnackbarHostState() }
-
-    val summaryQueue = koinInject<SummaryQueue>()
-    val summaryStates by summaryQueue.states.collectAsStateWithLifecycle()
-    val summaryProgress by summaryQueue.progress.collectAsStateWithLifecycle()
-    val summarizeEnabled = viewModel.aiSummariesEnabled
-    var summarizedArticle by remember { mutableStateOf<Article?>(null) }
 
     val confirmMarkAllReadEnabled by appPreferences.articleListOptions.confirmMarkAllRead.asState()
     var isMarkAllReadDialogOpen by remember { mutableStateOf(false) }
@@ -564,10 +555,6 @@ fun ArticleScreen(
                                 savedSearches = savedSearches,
                                 folders = allFolders,
                                 source = viewModel.source,
-                                showSummarize = summarizeEnabled,
-                                summaryProgress = summaryProgress,
-                                onSummarizeUnread = { viewModel.summarizeUnreadAsync() },
-                                onCancelSummaries = { summaryQueue.cancelAll() },
                             )
                         },
                         snackbarHost = {
@@ -637,12 +624,6 @@ fun ArticleScreen(
                                             },
                                             onSelect = { articleID ->
                                                 selectArticle(articleID)
-                                            },
-                                            showSummarize = summarizeEnabled,
-                                            summaryStates = summaryStates,
-                                            onSummarize = { summarized ->
-                                                summarizedArticle = summarized
-                                                summaryQueue.prioritize(summarized.id)
                                             },
                                         )
                                     }
@@ -755,16 +736,6 @@ fun ArticleScreen(
                 onDismissRequest = {
                     setUpdatePasswordDialogOpen(false)
                 }
-            )
-        }
-
-        summarizedArticle?.let { summarized ->
-            ArticleSummarySheet(
-                state = summaryState(summaryStates[summarized.id]),
-                hasDiscussionSite = Discussion.supports(summarized.commentsURL),
-                onDismissRequest = { summarizedArticle = null },
-                onRetry = { summaryQueue.prioritize(summarized.id) },
-                onRegenerate = { summaryQueue.prioritize(summarized.id, regenerate = true) },
             )
         }
 

@@ -37,7 +37,6 @@ fun FilterActionMenu(
     onRequestSearch: () -> Unit,
     hideSearchIcon: Boolean,
     source: Source,
-    afterMarkAllRead: @Composable () -> Unit = {},
 ) {
     val markReadPosition = LocalMarkAllReadButtonPosition.current
     val (expanded, setMenuExpanded) = remember(filter) { mutableStateOf(false) }
@@ -60,8 +59,6 @@ fun FilterActionMenu(
         if (markReadPosition == MarkReadPosition.TOOLBAR) {
             MarkAllReadButton()
         }
-
-        afterMarkAllRead()
 
         Box {
             if ((currentFeed != null && !currentFeed.isReadLater) || filter is ArticleFilter.Folders) {

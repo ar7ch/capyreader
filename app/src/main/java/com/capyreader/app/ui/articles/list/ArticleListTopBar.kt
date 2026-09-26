@@ -1,19 +1,16 @@
 package com.capyreader.app.ui.articles.list
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme.typography
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
@@ -40,7 +37,6 @@ import com.jocmp.capy.Feed
 import com.jocmp.capy.Folder
 import com.jocmp.capy.SavedSearch
 import com.jocmp.capy.accounts.Source
-import com.jocmp.capy.ai.SummaryProgress
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,10 +52,6 @@ fun ArticleListTopBar(
     savedSearches: List<SavedSearch>,
     folders: List<Folder>,
     source: Source,
-    showSummarize: Boolean,
-    summaryProgress: SummaryProgress?,
-    onSummarizeUnread: () -> Unit,
-    onCancelSummaries: () -> Unit,
 ) {
     val enableSearch = search.isActive
 
@@ -152,54 +144,9 @@ fun ArticleListTopBar(
                 onRequestSearch = { search.start() },
                 hideSearchIcon = enableSearch,
                 source = source,
-                afterMarkAllRead = {
-                    if (showSummarize) {
-                        SummarizeUnreadButton(
-                            progress = summaryProgress,
-                            onSummarize = onSummarizeUnread,
-                            onCancel = onCancelSummaries,
-                        )
-                    }
-                },
             )
         }
     )
-}
-
-@Composable
-private fun SummarizeUnreadButton(
-    progress: SummaryProgress?,
-    onSummarize: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    if (progress == null) {
-        IconButton(onClick = onSummarize) {
-            Icon(
-                imageVector = Icons.Rounded.AutoAwesome,
-                contentDescription = stringResource(R.string.article_list_summarize_unread)
-            )
-        }
-
-        return
-    }
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = stringResource(
-                R.string.article_list_summarizing_progress,
-                progress.done + 1,
-                progress.total,
-            ),
-            style = typography.labelMedium,
-            maxLines = 1,
-        )
-        IconButton(onClick = onCancel) {
-            Icon(
-                imageVector = Icons.Rounded.Close,
-                contentDescription = stringResource(R.string.article_list_summarize_cancel)
-            )
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -219,9 +166,5 @@ private fun FeedListTopBarPreview() {
         savedSearches = emptyList(),
         folders = emptyList(),
         source = Source.LOCAL,
-        showSummarize = true,
-        summaryProgress = SummaryProgress(done = 2, total = 12),
-        onSummarizeUnread = { },
-        onCancelSummaries = { },
     )
 }

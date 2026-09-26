@@ -661,24 +661,6 @@ class ArticleScreenViewModel(
         summaryQueue.prioritize(article.id, regenerate = regenerate)
     }
 
-    /**
-     * Queues every unread article of the current list, newest first. The queue skips the ones that
-     * already have a summary.
-     */
-    fun summarizeUnreadAsync() {
-        viewModelScope.launchIO {
-            // Always newest first, whatever the list sort: fresh items are the ones worth reading.
-            val articleIDs = account.unreadArticleIDs(
-                filter = latestFilter,
-                range = MarkRead.All,
-                sortOrder = SortOrder.NEWEST_FIRST,
-                query = _searchQuery.value,
-            )
-
-            summaryQueue.enqueue(articleIDs)
-        }
-    }
-
     private fun resetSummary() {
         summaryState = getSummaryState(summaryQueue.states.value)
     }

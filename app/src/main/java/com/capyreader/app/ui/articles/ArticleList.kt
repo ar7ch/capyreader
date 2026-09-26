@@ -32,7 +32,6 @@ import com.capyreader.app.R
 import com.capyreader.app.preferences.AppPreferences
 import com.jocmp.capy.Article
 import com.jocmp.capy.MarkRead
-import com.jocmp.capy.ai.SummaryStatus
 import kotlinx.coroutines.delay
 import org.koin.compose.koinInject
 import java.time.LocalDateTime
@@ -47,9 +46,6 @@ fun ArticleList(
     enableMarkReadOnScroll: Boolean = false,
     dimReadArticles: Boolean = true,
     scrollToTop: () -> Unit = {},
-    showSummarize: Boolean = false,
-    summaryStates: Map<String, SummaryStatus> = emptyMap(),
-    onSummarize: (article: Article) -> Unit = {},
 ) {
     val articleOptions = rememberArticleOptions().copy(
         dim = dimReadArticles,
@@ -86,9 +82,6 @@ fun ArticleList(
                                     onMarkAllRead = onMarkAllRead,
                                     currentTime = currentTime,
                                     options = articleOptions,
-                                    showSummarize = showSummarize,
-                                    summaryStatus = summaryStates[item.id],
-                                    onSummarize = onSummarize,
                                 )
                             }
                         }

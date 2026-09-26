@@ -17,11 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
@@ -71,7 +69,6 @@ import com.capyreader.app.ui.theme.LocalAppTheme
 import com.jocmp.capy.Article
 import com.jocmp.capy.EnclosureType
 import com.jocmp.capy.MarkRead
-import com.jocmp.capy.ai.SummaryStatus
 import com.jocmp.capy.articles.relativeTime
 import java.net.URL
 import kotlinx.coroutines.launch
@@ -99,9 +96,6 @@ fun ArticleRow(
     onMarkAllRead: (range: MarkRead) -> Unit = {},
     currentTime: LocalDateTime,
     options: ArticleRowOptions = ArticleRowOptions(),
-    showSummarize: Boolean = false,
-    summaryStatus: SummaryStatus? = null,
-    onSummarize: (article: Article) -> Unit = {},
 ) {
     val imageURL = article.imageURL
     val isMonochrome = LocalAppTheme.current.value == AppTheme.MONOCHROME
@@ -196,13 +190,6 @@ fun ArticleRow(
                                 color = feedNameColor,
                                 maxLines = 1,
                             )
-                            if (showSummarize) {
-                                SummarizeArticleButton(
-                                    status = summaryStatus,
-                                    tint = feedNameColor,
-                                    onClick = { onSummarize(article) },
-                                )
-                            }
                         }
                     }
                 },
@@ -275,33 +262,6 @@ fun ArticleRow(
             )
         }
     }
-}
-
-@Composable
-private fun SummarizeArticleButton(
-    status: SummaryStatus?,
-    tint: Color,
-    onClick: () -> Unit,
-) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.size(SUMMARIZE_BUTTON_SIZE)
-    ) {
-        if (status == SummaryStatus.Queued || status is SummaryStatus.Running) {
-            FullContentLoadingIcon(modifier = Modifier.size(SUMMARIZE_ICON_SIZE))
-        } else {
-            Icon(
-                Icons.Rounded.AutoAwesome,
-                contentDescription = stringResource(R.string.article_list_summarize),
-                tint = if (hasSummary(status)) colorScheme.primary else tint,
-                modifier = Modifier.size(SUMMARIZE_ICON_SIZE)
-            )
-        }
-    }
-}
-
-private fun hasSummary(status: SummaryStatus?): Boolean {
-    return status is SummaryStatus.Done || status == SummaryStatus.Stored
 }
 
 @Composable
@@ -472,10 +432,6 @@ private fun ArticleBox(
         }
     }
 }
-
-private val SUMMARIZE_BUTTON_SIZE = 40.dp
-
-private val SUMMARIZE_ICON_SIZE = 22.dp
 
 private val SMALL_IMAGE_SIZE = 56.dp
 private val MEDIUM_IMAGE_SIZE = 84.dp

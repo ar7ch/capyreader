@@ -91,10 +91,6 @@
     <string name="article_summary_stage_summarizing_article">Summarizing the article…</string>
     <string name="article_summary_stage_fetching_comments">Fetching the comment thread…</string>
     <string name="article_summary_stage_summarizing_discussion">Summarizing the discussion…</string>
-    <string name="article_list_summarize">Summarize</string>
-    <string name="article_list_summarize_unread">Summarize unread</string>
-    <string name="article_list_summarizing_progress">Summarizing %1$d of %2$d</string>
-    <string name="article_list_summarize_cancel">Stop summarizing</string>
     <string name="settings_panel_ai_title">AI summaries</string>
     <string name="settings_ai_enable_title">Enable summaries</string>
     <string name="settings_ai_enable_subtitle">Adds a summarize button to the article toolbar.</string>
