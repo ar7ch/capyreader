@@ -99,6 +99,13 @@
     <string name="settings_ai_api_key">API key</string>
     <string name="settings_ai_model">Model</string>
     <string name="settings_ai_privacy_notice">Article text and comments are sent to this service when you ask for a summary.</string>
+    <string name="article_chat_open">Chat about this</string>
+    <string name="article_chat_title">Chat</string>
+    <string name="article_chat_close">Close chat</string>
+    <string name="article_chat_send">Send</string>
+    <string name="article_chat_input_hint">Ask about this article</string>
+    <string name="article_chat_placeholder">Ask a question about this article. Answers come from the article text.</string>
+    <string name="article_chat_error">Chat failed: %1$s</string>
     <string name="settings_ai_preset_label">Load a preset</string>
     <string name="settings_ai_profiles_title">Profiles</string>
     <string name="settings_ai_save_profile">Save profile</string>

@@ -36,6 +36,7 @@ fun ArticleSummarySheet(
     onDismissRequest: () -> Unit,
     onRetry: () -> Unit,
     onRegenerate: () -> Unit,
+    onChat: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
@@ -94,6 +95,10 @@ fun ArticleSummarySheet(
                         Text(stringResource(R.string.article_summary_regenerate))
                     }
                 }
+            }
+
+            TextButton(onClick = onChat) {
+                Text(stringResource(R.string.article_chat_open))
             }
         }
     }

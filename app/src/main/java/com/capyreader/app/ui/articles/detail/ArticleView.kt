@@ -138,9 +138,11 @@ fun ArticleView(
     val snackbarHostState = remember { SnackbarHostState() }
 
     val (summaryOpen, setSummaryOpen) = remember { mutableStateOf(false) }
+    val (chatOpen, setChatOpen) = remember { mutableStateOf(false) }
 
     LaunchedEffect(article.id) {
         setSummaryOpen(false)
+        setChatOpen(false)
     }
 
     val contentPadding = rememberContentPadding(pinToolbars)
@@ -225,6 +227,17 @@ fun ArticleView(
                     onDismissRequest = { setSummaryOpen(false) },
                     onRetry = { onSummarize(false) },
                     onRegenerate = { onSummarize(true) },
+                    onChat = {
+                        setSummaryOpen(false)
+                        setChatOpen(true)
+                    },
+                )
+            }
+
+            if (chatOpen) {
+                ArticleChatDialog(
+                    article = article,
+                    onDismissRequest = { setChatOpen(false) },
                 )
             }
 

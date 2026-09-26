@@ -12,6 +12,7 @@ import com.jocmp.capy.ClientCertManager
 import com.jocmp.capy.DatabaseProvider
 import com.jocmp.capy.PreferenceStoreProvider
 import com.jocmp.capy.accounts.httpClientBuilder
+import com.jocmp.capy.ai.ArticleChat
 import com.jocmp.capy.ai.ChatClient
 import com.jocmp.capy.ai.Summarizer
 import okhttp3.OkHttpClient
@@ -42,6 +43,7 @@ internal val common = module {
     single { AppPreferences(get()) }
     single { ChatClient(httpClient = get()) }
     single { Summarizer(chatClient = get(), httpClient = get()) }
+    single { ArticleChat(chatClient = get()) }
     single { RefreshScheduler(get(), get()) }
 }
 

@@ -134,6 +134,28 @@ class ChatClientTest {
     }
 
     @Test
+    fun complete_sendsAWholeConversation() = runTest {
+        val interceptor = RecordingInterceptor(chatResponse("Because it is faster."))
+
+        val result = ChatClient(interceptor.client()).complete(
+            settings,
+            messages = listOf(
+                ChatMessage(role = "system", content = "answer about the article"),
+                ChatMessage(role = "user", content = "what is it about?"),
+                ChatMessage(role = "assistant", content = "incremental backups"),
+                ChatMessage(role = "user", content = "why does that matter?"),
+            ),
+        )
+
+        assertEquals(expected = "Because it is faster.", actual = result.getOrThrow())
+
+        val body = interceptor.bodies.single()
+
+        assertContains(body, "\"role\":\"assistant\"")
+        assertContains(body, "why does that matter?")
+    }
+
+    @Test
     fun complete_omitsAuthorizationWhenKeyIsBlank() = runTest {
         val interceptor = RecordingInterceptor(chatResponse("Summary."))
 

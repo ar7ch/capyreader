@@ -43,6 +43,20 @@ class ChatClient(httpClient: OkHttpClient) {
         system: String,
         user: String,
         onDelta: (String) -> Unit = {},
+    ): Result<String> = complete(
+        settings = settings,
+        messages = listOf(
+            ChatMessage(role = "system", content = system),
+            ChatMessage(role = "user", content = user),
+        ),
+        onDelta = onDelta,
+    )
+
+    /** [messages] is the whole conversation so far, oldest first, starting with the system message. */
+    suspend fun complete(
+        settings: AiSettings,
+        messages: List<ChatMessage>,
+        onDelta: (String) -> Unit = {},
     ): Result<String> {
         val url = completionsURL(settings.baseURL)
             ?: return Result.failure(InvalidSettingsError("Base URL is not a valid http or https URL"))
@@ -53,10 +67,7 @@ class ChatClient(httpClient: OkHttpClient) {
 
         val request = ChatRequest(
             model = settings.model,
-            messages = listOf(
-                ChatMessage(role = "system", content = system),
-                ChatMessage(role = "user", content = user),
-            ),
+            messages = messages,
         )
 
         return try {
@@ -262,7 +273,7 @@ private data class Thinking(
 )
 
 @Serializable
-private data class ChatMessage(
+data class ChatMessage(
     val role: String,
     val content: String,
 )
