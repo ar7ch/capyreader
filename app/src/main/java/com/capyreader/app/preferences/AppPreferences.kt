@@ -18,6 +18,8 @@ import com.capyreader.app.preferences.AndroidPreferenceStore
 import com.jocmp.capy.preferences.Preference
 import com.jocmp.capy.preferences.PreferenceStore
 import com.jocmp.capy.preferences.getEnum
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class AppPreferences(context: Context) {
@@ -105,6 +107,16 @@ class AppPreferences(context: Context) {
         val model: Preference<String>
             get() = preferenceStore.getString("ai_model", DEFAULT_MODEL)
 
+        val profiles: Preference<List<AiProfile>>
+            get() = preferenceStore.getObject(
+                key = "ai_profiles",
+                defaultValue = emptyList(),
+                serializer = { json.encodeToString(it) },
+                deserializer = { stored ->
+                    runCatching { json.decodeFromString<List<AiProfile>>(stored) }.getOrDefault(emptyList())
+                },
+            )
+
         fun settings() = AiSettings(
             baseURL = baseURL.get().ifBlank { DEFAULT_BASE_URL },
             apiKey = apiKey.get(),
@@ -115,6 +127,16 @@ class AppPreferences(context: Context) {
             const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
 
             const val DEFAULT_MODEL = "gpt-4.1-mini"
+
+            private val json = Json { ignoreUnknownKeys = true }
+
+            /** Common services shown as one-tap starting points. The user still fills in the key. */
+            val PRESETS = listOf(
+                AiProfile(name = "OpenAI", baseURL = DEFAULT_BASE_URL, model = DEFAULT_MODEL),
+                AiProfile(name = "Z.AI (coding plan)", baseURL = "https://api.z.ai/api/coding/paas/v4", model = "glm-4.6"),
+                AiProfile(name = "Zhipu GLM", baseURL = "https://open.bigmodel.cn/api/paas/v4", model = "glm-4.6"),
+                AiProfile(name = "Ollama (local)", baseURL = "http://localhost:11434/v1", model = "qwen3"),
+            )
         }
     }
 
