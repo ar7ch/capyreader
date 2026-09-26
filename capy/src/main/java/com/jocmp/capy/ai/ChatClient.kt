@@ -62,17 +62,18 @@ class ChatClient(httpClient: OkHttpClient) {
         return try {
             var response = send(url, settings.apiKey, request)
 
-            // Summaries do not need chain of thought, and on Ollama a thinking model spends most
-            // of its time on it. Servers that do not know reasoning_effort for the model answer
-            // 400 and name the parameter; retry once without it.
+            // Summaries do not need chain of thought, so the request turns reasoning off two ways:
+            // reasoning_effort for OpenAI style servers and thinking for GLM, which ignores the
+            // former. A server that rejects either answers 400; retry once without both. A genuine
+            // 400 repeats on the plain request and is returned.
             if (response.code == 400) {
                 val body = response.body.string()
 
-                if (!body.contains(REASONING_EFFORT)) {
+                response = send(url, settings.apiKey, request.copy(reasoningEffort = null, thinking = null))
+
+                if (!response.isSuccessful) {
                     return Result.failure(HttpError(code = 400, body = body.take(500)))
                 }
-
-                response = send(url, settings.apiKey, request.copy(reasoningEffort = null))
             }
 
             if (!response.isSuccessful) {
@@ -167,7 +168,6 @@ class ChatClient(httpClient: OkHttpClient) {
     companion object {
         private const val READ_TIMEOUT_SECONDS = 300L
         private const val CALL_TIMEOUT_SECONDS = 360L
-        private const val REASONING_EFFORT = "reasoning_effort"
         private const val EVENT_STREAM_SUBTYPE = "event-stream"
         private const val DATA_PREFIX = "data:"
         private const val DONE_PAYLOAD = "[DONE]"
@@ -252,6 +252,13 @@ private data class ChatRequest(
     val stream: Boolean = true,
     @SerialName("reasoning_effort")
     val reasoningEffort: String? = "none",
+    // GLM ignores reasoning_effort; this is its own switch for the same thing.
+    val thinking: Thinking? = Thinking("disabled"),
+)
+
+@Serializable
+private data class Thinking(
+    val type: String,
 )
 
 @Serializable

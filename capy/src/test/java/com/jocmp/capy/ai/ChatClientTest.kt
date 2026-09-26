@@ -35,8 +35,31 @@ class ChatClientTest {
 
         assertContains(body, "\"model\":\"test-model\"")
         assertContains(body, "\"reasoning_effort\":\"none\"")
+        assertContains(body, "\"thinking\":{\"type\":\"disabled\"}")
         assertContains(body, "system rules")
         assertContains(body, "<<<ARTICLE>>>")
+    }
+
+    @Test
+    fun complete_ignoresGLMReasoningContentDeltas() = runTest {
+        // GLM streams its scratch work in a separate reasoning_content field, not in content.
+        val stream = listOf(
+            """data: {"choices":[{"index":0,"delta":{"reasoning_content":"weighing options"}}]}""",
+            """data: {"choices":[{"index":0,"delta":{"content":"Caching "}}]}""",
+            """data: {"choices":[{"index":0,"delta":{"content":"is explained."}}]}""",
+            "data: [DONE]",
+        ).joinToString("\n\n", postfix = "\n\n")
+        val interceptor = RecordingInterceptor(
+            stream,
+            contentType = RecordingInterceptor.EVENT_STREAM_CONTENT_TYPE,
+        )
+        val deltas = mutableListOf<String>()
+
+        val result = ChatClient(interceptor.client())
+            .complete(settings, system = "s", user = "u", onDelta = { deltas.add(it) })
+
+        assertEquals(expected = "Caching is explained.", actual = result.getOrThrow())
+        assertEquals(expected = listOf("Caching", "Caching is explained."), actual = deltas)
     }
 
     @Test
@@ -107,6 +130,7 @@ class ChatClientTest {
         assertEquals(expected = 2, actual = interceptor.requests.size)
         assertContains(interceptor.bodies[0], "reasoning_effort")
         assertTrue(!interceptor.bodies[1].contains("reasoning_effort"))
+        assertTrue(!interceptor.bodies[1].contains("thinking"))
     }
 
     @Test
