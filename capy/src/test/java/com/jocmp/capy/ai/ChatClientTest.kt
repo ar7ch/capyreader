@@ -205,6 +205,37 @@ class ChatClientTest {
     }
 
     @Test
+    fun httpError_showsTheServersOwnWords() {
+        val openRouter = """{"error":{"message":"Provider returned error","code":400,"metadata":{"raw":"model is not a valid model ID"}}}"""
+
+        assertEquals(
+            expected = "HTTP 400: Provider returned error model is not a valid model ID",
+            actual = ChatClient.HttpError(code = 400, body = openRouter).message,
+        )
+        assertEquals(expected = "HTTP 401: nope", actual = ChatClient.HttpError(401, """{"error":"nope"}""").message)
+        assertEquals(expected = "HTTP 502: Bad Gateway", actual = ChatClient.HttpError(502, "Bad Gateway\n").message)
+        assertEquals(expected = "HTTP 500", actual = ChatClient.HttpError(500, "").message)
+        assertEquals(
+            expected = """HTTP 422: {"detail":"Invalid model"}""",
+            actual = ChatClient.HttpError(422, """{"detail":"Invalid model"}""").message,
+        )
+    }
+
+    @Test
+    fun complete_keepsALongJSONErrorWhole() = runTest {
+        val padding = "x".repeat(1_000)
+        val interceptor = RecordingInterceptor(
+            """{"error":{"message":"bad model","padding":"$padding"}}""",
+            code = 404,
+        )
+
+        val result = ChatClient(interceptor.client()).complete(settings, system = "s", user = "u")
+
+        val error = assertIs<AllProfilesFailedError>(result.exceptionOrNull())
+        assertEquals(expected = "HTTP 404: bad model", actual = error.failures.single().second.message)
+    }
+
+    @Test
     fun complete_sendsAWholeConversation() = runTest {
         val interceptor = RecordingInterceptor(chatResponse("Because it is faster."))
 

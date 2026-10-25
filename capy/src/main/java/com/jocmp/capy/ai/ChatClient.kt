@@ -9,6 +9,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -106,14 +109,14 @@ class ChatClient(httpClient: OkHttpClient) {
 
                 if (!response.isSuccessful) {
                     response.close()
-                    return Result.failure(HttpError(code = 400, body = body.take(500)))
+                    return Result.failure(HttpError(code = 400, body = body.take(MAX_ERROR_BODY)))
                 }
             }
 
             if (!response.isSuccessful) {
                 val body = response.body.string()
 
-                return Result.failure(HttpError(code = response.code, body = body.take(500)))
+                return Result.failure(HttpError(code = response.code, body = body.take(MAX_ERROR_BODY)))
             }
 
             val cleaned = stripReasoning(read(response, onDelta))
@@ -242,12 +245,40 @@ class ChatClient(httpClient: OkHttpClient) {
 
     class InvalidSettingsError(override val message: String) : Throwable(message)
 
-    class HttpError(val code: Int, val body: String) : Throwable("HTTP $code")
+    class HttpError(val code: Int, val body: String) : Throwable(
+        listOf("HTTP $code", describe(body)).filter { it.isNotBlank() }.joinToString(": ")
+    ) {
+        private companion object {
+            /**
+             * The server's own words: error.message in the OpenAI shape, plus the upstream
+             * provider's text that OpenRouter puts in error.metadata.raw. Anything else shows as
+             * the start of the body.
+             */
+            fun describe(body: String): String {
+                val root = runCatching { Json.parseToJsonElement(body) }.getOrNull() as? JsonObject
+                val error = root?.get("error")
+                val details = error as? JsonObject ?: root
+                val words = listOfNotNull(
+                    (error as? JsonPrimitive)?.contentOrNull?.trim(),
+                    details?.text("message"),
+                    (details?.get("metadata") as? JsonObject)?.text("raw"),
+                ).filter { it.isNotEmpty() }.distinct().joinToString(" ")
+
+                return words.ifBlank { body.trim() }.take(300)
+            }
+
+            private fun JsonObject.text(key: String) =
+                (this[key] as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+        }
+    }
 
     class EmptyResponseError : Throwable("The model returned an empty response")
 
     companion object {
         private const val READ_TIMEOUT_SECONDS = 300L
+
+        // Long enough that a JSON error stays whole for HttpError to parse.
+        private const val MAX_ERROR_BODY = 64_000
         private const val CALL_TIMEOUT_SECONDS = 360L
         private const val EVENT_STREAM_SUBTYPE = "event-stream"
 
