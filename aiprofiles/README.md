@@ -45,7 +45,10 @@ A request walks the usable profiles in order:
 |---|---|
 | `openrouter.ai` or a subdomain | `"reasoning": {"effort": "<level>"}` |
 | `z.ai`, `bigmodel.cn` or a subdomain (GLM) | `"thinking": {"type": "disabled"}` for `none`, `"enabled"` otherwise |
-| anything else | `"reasoning_effort": "<level>"` |
+| anything else | `"reasoning_effort": "<level>"`, left out for `none` |
+
+Non-reasoning models such as gpt-4.1-mini reject `reasoning_effort`, so `none` sends nothing
+there and reasoning models fall back to their default effort.
 
 Match the domain exactly or as a dot suffix, so `quiz.ai` is not `z.ai`. Send only the one field the host reads: OpenAI rejects unknown fields with 400. If a server
 still answers 400, retry the same profile once without the field before counting the attempt

@@ -150,10 +150,12 @@ class ChatClient(httpClient: OkHttpClient) {
                 thinking = Thinking(if (level == ThinkingLevel.NONE) "disabled" else "enabled"),
             )
 
+            // Non-reasoning models such as gpt-4.1-mini reject the field outright, so off sends
+            // nothing and reasoning models keep their default effort.
             else -> ChatRequest(
                 model = model,
                 messages = messages,
-                reasoningEffort = level.effort,
+                reasoningEffort = level.effort.takeUnless { level == ThinkingLevel.NONE },
             )
         }
     }

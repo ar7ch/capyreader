@@ -39,7 +39,7 @@ class ChatClientTest {
         val body = interceptor.bodies.single()
 
         assertContains(body, "\"model\":\"test-model\"")
-        assertContains(body, "\"reasoning_effort\":\"none\"")
+        assertTrue(!body.contains("reasoning_effort"))
         assertTrue(!body.contains("thinking"))
         assertContains(body, "system rules")
         assertContains(body, "<<<ARTICLE>>>")
@@ -129,7 +129,8 @@ class ChatClientTest {
             codes = listOf(400, 200),
         )
 
-        val result = ChatClient(interceptor.client()).complete(settings, system = "s", user = "u")
+        val result = ChatClient(interceptor.client())
+            .complete(settings.copy(thinkingLevel = ThinkingLevel.HIGH), system = "s", user = "u")
 
         assertEquals(expected = "A short summary.", actual = result.getOrThrow())
         assertEquals(expected = 2, actual = interceptor.requests.size)
