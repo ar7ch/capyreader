@@ -195,6 +195,16 @@ class ChatClientTest {
     }
 
     @Test
+    fun complete_doesNotResendA400WithoutAThinkingField() = runTest {
+        val interceptor = RecordingInterceptor("""{"error":"bad request"}""", code = 400)
+
+        ChatClient(interceptor.client()).complete(settingsFor(profile.copy(apiKey = "")), system = "s", user = "u")
+
+        // Three attempts on the only profile, one request each.
+        assertEquals(expected = 3, actual = interceptor.requests.size)
+    }
+
+    @Test
     fun complete_sendsAWholeConversation() = runTest {
         val interceptor = RecordingInterceptor(chatResponse("Because it is faster."))
 

@@ -94,15 +94,18 @@ class ChatClient(httpClient: OkHttpClient) {
 
         return try {
             var response = send(url, profile.apiKey, request)
+            val plain = request.copy(reasoningEffort = null, thinking = null, reasoning = null)
 
             // A server that rejects the thinking field answers 400; retry once without it. A
-            // genuine 400 repeats on the plain request and is returned.
-            if (response.code == 400) {
+            // genuine 400 repeats on the plain request and is returned. Without a thinking field
+            // there is nothing to drop, so the 400 stands.
+            if (response.code == 400 && plain != request) {
                 val body = response.body.string()
 
-                response = send(url, profile.apiKey, request.copy(reasoningEffort = null, thinking = null, reasoning = null))
+                response = send(url, profile.apiKey, plain)
 
                 if (!response.isSuccessful) {
+                    response.close()
                     return Result.failure(HttpError(code = 400, body = body.take(500)))
                 }
             }
