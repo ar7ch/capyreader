@@ -9,8 +9,10 @@ import com.capyreader.app.ui.articles.ArticleListFontScale
 import com.capyreader.app.ui.articles.DefaultPaneExpansionIndex
 import com.capyreader.app.ui.articles.MarkReadPosition
 import com.jocmp.capy.ArticleFilter
+import com.jocmp.aiprofiles.AiPresets
+import com.jocmp.aiprofiles.AiProfile
+import com.jocmp.aiprofiles.ThinkingLevel
 import com.jocmp.capy.ai.AiSettings
-import com.jocmp.capy.ai.ThinkingLevel
 import com.jocmp.capy.articles.FontOption
 import com.jocmp.capy.articles.FontSize
 import com.jocmp.capy.articles.SortOrder
@@ -99,14 +101,14 @@ class AppPreferences(context: Context) {
         val enabled: Preference<Boolean>
             get() = preferenceStore.getBoolean("ai_summaries_enabled", false)
 
-        val baseURL: Preference<String>
-            get() = preferenceStore.getString("ai_base_url", DEFAULT_BASE_URL)
-
-        val apiKey: Preference<String>
-            get() = preferenceStore.getString("ai_api_key")
-
-        val model: Preference<String>
-            get() = preferenceStore.getString("ai_model", DEFAULT_MODEL)
+        /** In priority order: a request tries the first and falls back down the list. */
+        val profiles: Preference<List<AiProfile>>
+            get() = preferenceStore.getObject(
+                key = "ai_profiles",
+                defaultValue = emptyList(),
+                serializer = AiProfile::encodeList,
+                deserializer = AiProfile::decodeList,
+            )
 
         val thinkingLevel: Preference<ThinkingLevel>
             get() = preferenceStore.getEnum("ai_thinking_level", ThinkingLevel.NONE)
@@ -114,39 +116,55 @@ class AppPreferences(context: Context) {
         val instructions: Preference<String>
             get() = preferenceStore.getString("ai_instructions")
 
-        val profiles: Preference<List<AiProfile>>
-            get() = preferenceStore.getObject(
-                key = "ai_profiles",
-                defaultValue = emptyList(),
-                serializer = { json.encodeToString(it) },
-                deserializer = { stored ->
-                    runCatching { json.decodeFromString<List<AiProfile>>(stored) }.getOrDefault(emptyList())
-                },
+        // Before profiles had a priority, one live connection sat in these keys and saved
+        // profiles were copies loaded into them.
+        private val legacyKeys = listOf("ai_base_url", "ai_api_key", "ai_model")
+            .map { preferenceStore.getString(it) }
+
+        /** Moves the old live connection to the top of the list, once. */
+        fun migrateLegacyConnection() {
+            if (legacyKeys.none { it.isSet() }) {
+                return
+            }
+
+            val (baseURL, apiKey, model) = legacyKeys.map { it.get().trim() }
+            val baseUrl = baseURL.ifBlank { LEGACY_BASE_URL }
+            val liveModel = model.ifBlank { LEGACY_MODEL }
+
+            // The live connection was usually loaded from a saved profile, which kept its name
+            // and may have left its key blank for the live one to fill.
+            fun isCopy(profile: AiProfile) = profile.baseUrl == baseUrl &&
+                profile.model == liveModel &&
+                (profile.apiKey.isBlank() || profile.apiKey == apiKey)
+
+            val stored = profiles.get()
+            val live = AiProfile(
+                name = stored.find(::isCopy)?.name
+                    ?: AiPresets.find { it.baseUrl == baseUrl }?.name.orEmpty(),
+                baseUrl = baseUrl,
+                apiKey = apiKey,
+                model = liveModel,
             )
+            val saved = stored.filterNot(::isCopy)
 
-        fun settings() = AiSettings(
-            baseURL = baseURL.get().ifBlank { DEFAULT_BASE_URL },
-            apiKey = apiKey.get(),
-            model = model.get().trim(),
-            thinkingLevel = thinkingLevel.get(),
-            instructions = instructions.get(),
-        )
+            profiles.set(listOf(live) + saved)
+            legacyKeys.forEach { it.delete() }
+        }
 
-        companion object {
-            const val DEFAULT_BASE_URL = "https://api.openai.com/v1"
+        fun settings(): AiSettings {
+            migrateLegacyConnection()
 
-            const val DEFAULT_MODEL = "gpt-4.1-mini"
-
-            private val json = Json { ignoreUnknownKeys = true }
-
-            /** Common services shown as one-tap starting points. The user still fills in the key. */
-            val PRESETS = listOf(
-                AiProfile(name = "OpenAI", baseURL = DEFAULT_BASE_URL, model = DEFAULT_MODEL),
-                AiProfile(name = "Z.AI (coding plan)", baseURL = "https://api.z.ai/api/coding/paas/v4", model = "glm-4.6"),
-                AiProfile(name = "Zhipu GLM", baseURL = "https://open.bigmodel.cn/api/paas/v4", model = "glm-4.6"),
-                AiProfile(name = "OpenRouter", baseURL = "https://openrouter.ai/api/v1", model = "openai/gpt-4.1-mini"),
-                AiProfile(name = "Ollama (local)", baseURL = "http://localhost:11434/v1", model = "qwen3"),
+            return AiSettings(
+                profiles = profiles.get(),
+                thinkingLevel = thinkingLevel.get(),
+                instructions = instructions.get(),
             )
+        }
+
+        private companion object {
+            const val LEGACY_BASE_URL = "https://api.openai.com/v1"
+
+            const val LEGACY_MODEL = "gpt-4.1-mini"
         }
     }
 

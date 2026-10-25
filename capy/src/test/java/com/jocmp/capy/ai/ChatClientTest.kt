@@ -1,18 +1,23 @@
 package com.jocmp.capy.ai
 
+import com.jocmp.aiprofiles.AiProfile
+import com.jocmp.aiprofiles.AllProfilesFailedError
+import com.jocmp.aiprofiles.NoProfileError
+import com.jocmp.aiprofiles.ThinkingLevel
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ChatClientTest {
-    private val settings = AiSettings(
-        baseURL = "https://api.example.com/v1",
-        apiKey = "sk-test",
-        model = "test-model",
-    )
+    private val profile = AiProfile(baseUrl = "https://api.example.com/v1", apiKey = "sk-test", model = "test-model")
+
+    private val settings = AiSettings(profiles = listOf(profile))
+
+    private fun settingsFor(profile: AiProfile) = settings.copy(profiles = listOf(profile))
 
     @Test
     fun complete_postsToChatCompletions() = runTest {
@@ -151,7 +156,7 @@ class ChatClientTest {
     @Test
     fun complete_sendsGLMThinkingSwitchOnly() = runTest {
         val interceptor = RecordingInterceptor(chatResponse("ok"))
-        val glm = settings.copy(baseURL = "https://api.z.ai/api/paas/v4", thinkingLevel = ThinkingLevel.MEDIUM)
+        val glm = settingsFor(profile.copy(baseUrl = "https://api.z.ai/api/paas/v4")).copy(thinkingLevel = ThinkingLevel.MEDIUM)
 
         ChatClient(interceptor.client()).complete(glm, system = "s", user = "u")
 
@@ -164,7 +169,7 @@ class ChatClientTest {
     @Test
     fun complete_matchesGLMHostsByWholeDomain() = runTest {
         val interceptor = RecordingInterceptor(chatResponse("ok"))
-        val lookalike = settings.copy(baseURL = "https://api.quiz.ai/v1", thinkingLevel = ThinkingLevel.LOW)
+        val lookalike = settingsFor(profile.copy(baseUrl = "https://api.quiz.ai/v1")).copy(thinkingLevel = ThinkingLevel.LOW)
 
         ChatClient(interceptor.client()).complete(lookalike, system = "s", user = "u")
 
@@ -177,7 +182,7 @@ class ChatClientTest {
     @Test
     fun complete_sendsOpenRouterReasoningObject() = runTest {
         val interceptor = RecordingInterceptor(chatResponse("ok"))
-        val openRouter = settings.copy(baseURL = "https://openrouter.ai/api/v1", thinkingLevel = ThinkingLevel.LOW)
+        val openRouter = settingsFor(profile.copy(baseUrl = "https://openrouter.ai/api/v1")).copy(thinkingLevel = ThinkingLevel.LOW)
 
         ChatClient(interceptor.client()).complete(openRouter, system = "s", user = "u")
 
@@ -215,7 +220,7 @@ class ChatClientTest {
         val interceptor = RecordingInterceptor(chatResponse("Summary."))
 
         ChatClient(interceptor.client()).complete(
-            settings.copy(apiKey = "  "),
+            settingsFor(profile.copy(apiKey = "  ")),
             system = "s",
             user = "u",
         ).getOrThrow()
@@ -240,7 +245,35 @@ class ChatClientTest {
 
         val result = ChatClient(interceptor.client()).complete(settings, system = "s", user = "u")
 
-        assertTrue(result.exceptionOrNull() is ChatClient.HttpError)
+        val error = assertIs<AllProfilesFailedError>(result.exceptionOrNull())
+        assertIs<ChatClient.HttpError>(error.failures.single().second)
+        assertEquals(expected = 3, actual = interceptor.requests.size)
+    }
+
+    @Test
+    fun complete_fallsBackToTheNextProfile() = runTest {
+        val interceptor = RecordingInterceptor(
+            responses = listOf("down", "down", "down", chatResponse("From the backup.")),
+            codes = listOf(500, 500, 500, 200),
+        )
+        val backup = profile.copy(baseUrl = "https://backup.example.com/v1")
+
+        val deltas = mutableListOf<String>()
+
+        val result = ChatClient(interceptor.client())
+            .complete(
+                settings.copy(profiles = listOf(profile, backup)),
+                system = "s",
+                user = "u",
+                onDelta = { deltas.add(it) },
+            )
+
+        assertEquals(expected = "From the backup.", actual = result.getOrThrow())
+        assertEquals(expected = listOf("", "", ""), actual = deltas)
+        assertEquals(
+            expected = "https://backup.example.com/v1/chat/completions",
+            actual = interceptor.requests.last().url.toString(),
+        )
     }
 
     @Test
@@ -248,9 +281,10 @@ class ChatClientTest {
         val interceptor = RecordingInterceptor(chatResponse("Summary."))
 
         val result = ChatClient(interceptor.client())
-            .complete(settings.copy(baseURL = "not a url"), system = "s", user = "u")
+            .complete(settingsFor(profile.copy(baseUrl = "not a url")), system = "s", user = "u")
 
-        assertTrue(result.exceptionOrNull() is ChatClient.InvalidSettingsError)
+        val error = assertIs<AllProfilesFailedError>(result.exceptionOrNull())
+        assertIs<ChatClient.InvalidSettingsError>(error.failures.single().second)
         assertTrue(interceptor.requests.isEmpty())
     }
 
@@ -259,9 +293,9 @@ class ChatClientTest {
         val interceptor = RecordingInterceptor(chatResponse("Summary."))
 
         val result = ChatClient(interceptor.client())
-            .complete(settings.copy(model = ""), system = "s", user = "u")
+            .complete(settingsFor(profile.copy(model = "")), system = "s", user = "u")
 
-        assertTrue(result.exceptionOrNull() is ChatClient.InvalidSettingsError)
+        assertIs<NoProfileError>(result.exceptionOrNull())
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.jocmp.capy.ai
 
+import com.jocmp.aiprofiles.AiProfile
 import com.jocmp.capy.Account
 import com.jocmp.capy.Article
 import com.jocmp.capy.fixtures.AccountFixture
@@ -30,9 +31,7 @@ class SummaryQueueTest {
     val folder = TemporaryFolder()
 
     private val settings = AiSettings(
-        baseURL = "https://api.example.com/v1",
-        apiKey = "",
-        model = "test-model",
+        profiles = listOf(AiProfile(baseUrl = "https://api.example.com/v1", model = "test-model")),
     )
 
     private lateinit var account: Account

@@ -260,7 +260,7 @@ class SummaryQueue(
                 onProgress = { partial, stage -> report(articleID, partial, stage) },
             ).fold(
                 onSuccess = { summary ->
-                    account.saveSummary(articleID, summary, model = current.model)
+                    account.saveSummary(articleID, summary, model = summary.model.orEmpty())
                     setStatus(articleID, SummaryStatus.Done(summary))
                 },
                 onFailure = { error -> fail(articleID, error) }
@@ -286,7 +286,8 @@ class SummaryQueue(
             val text = partial ?: current?.partial
             val length = text?.article.orEmpty().length + text?.discussion.orEmpty().length
 
-            if (current?.stage == stage && length < publishedLength + PARTIAL_STEP) {
+            // Shorter text means a retry started over, which goes out at once.
+            if (current?.stage == stage && length in publishedLength until publishedLength + PARTIAL_STEP) {
                 return@synchronized
             }
 

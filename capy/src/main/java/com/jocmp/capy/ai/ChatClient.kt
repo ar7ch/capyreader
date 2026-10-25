@@ -1,5 +1,8 @@
 package com.jocmp.capy.ai
 
+import com.jocmp.aiprofiles.AiProfile
+import com.jocmp.aiprofiles.ThinkingLevel
+import com.jocmp.aiprofiles.firstSuccess
 import com.jocmp.capy.common.await
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,20 +20,12 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 data class AiSettings(
-    val baseURL: String,
-    val apiKey: String,
-    val model: String,
+    /** In priority order. A request falls back down the list, see [firstSuccess]. */
+    val profiles: List<AiProfile>,
     val thinkingLevel: ThinkingLevel = ThinkingLevel.NONE,
     /** Extra rules from the user, appended to the system message of every request. */
     val instructions: String = "",
 )
-
-enum class ThinkingLevel(val effort: String) {
-    NONE("none"),
-    LOW("low"),
-    MEDIUM("medium"),
-    HIGH("high"),
-}
 
 /**
  * Minimal client for the OpenAI chat completions API. Works against OpenAI itself and against
@@ -53,6 +48,7 @@ class ChatClient(httpClient: OkHttpClient) {
         system: String,
         user: String,
         onDelta: (String) -> Unit = {},
+        onAnswered: (AiProfile) -> Unit = {},
     ): Result<String> = complete(
         settings = settings,
         messages = listOf(
@@ -60,41 +56,51 @@ class ChatClient(httpClient: OkHttpClient) {
             ChatMessage(role = "user", content = user),
         ),
         onDelta = onDelta,
+        onAnswered = onAnswered,
     )
 
     /**
      * [messages] is the whole conversation so far, oldest first, starting with the system message.
-     * Runs on the IO dispatcher, so [onDelta] is called from a background thread.
+     * Requests run on the IO dispatcher, so [onDelta] is called from a background thread. Each failed
+     * attempt ends with an empty [onDelta], so text from it does not linger.
+     * [onAnswered] gets the profile that produced the reply.
      */
     suspend fun complete(
         settings: AiSettings,
         messages: List<ChatMessage>,
         onDelta: (String) -> Unit = {},
-    ): Result<String> = withContext(Dispatchers.IO) { request(settings, messages, onDelta) }
+        onAnswered: (AiProfile) -> Unit = {},
+    ): Result<String> {
+        val withInstructions = withInstructions(messages, settings.instructions)
+
+        return firstSuccess(settings.profiles) { profile ->
+            withContext(Dispatchers.IO) { request(profile, settings.thinkingLevel, withInstructions, onDelta) }
+                .onSuccess { onAnswered(profile) }
+                // A failed attempt may have streamed part of an answer; take it back.
+                .onFailure { onDelta("") }
+        }
+    }
 
     private suspend fun request(
-        settings: AiSettings,
+        profile: AiProfile,
+        thinkingLevel: ThinkingLevel,
         messages: List<ChatMessage>,
         onDelta: (String) -> Unit,
     ): Result<String> {
-        val url = completionsURL(settings.baseURL)
+        val url = completionsURL(profile.baseUrl)
             ?: return Result.failure(InvalidSettingsError("Base URL is not a valid http or https URL"))
 
-        if (settings.model.isBlank()) {
-            return Result.failure(InvalidSettingsError("Model name is empty"))
-        }
-
-        val request = chatRequest(url, settings, withInstructions(messages, settings.instructions))
+        val request = chatRequest(url, profile.model, thinkingLevel, messages)
 
         return try {
-            var response = send(url, settings.apiKey, request)
+            var response = send(url, profile.apiKey, request)
 
             // A server that rejects the thinking field answers 400; retry once without it. A
             // genuine 400 repeats on the plain request and is returned.
             if (response.code == 400) {
                 val body = response.body.string()
 
-                response = send(url, settings.apiKey, request.copy(reasoningEffort = null, thinking = null, reasoning = null))
+                response = send(url, profile.apiKey, request.copy(reasoningEffort = null, thinking = null, reasoning = null))
 
                 if (!response.isSuccessful) {
                     return Result.failure(HttpError(code = 400, body = body.take(500)))
@@ -121,28 +127,31 @@ class ChatClient(httpClient: OkHttpClient) {
         }
     }
 
-    private fun chatRequest(url: String, settings: AiSettings, messages: List<ChatMessage>): ChatRequest {
-        val level = settings.thinkingLevel
-
+    private fun chatRequest(
+        url: String,
+        model: String,
+        level: ThinkingLevel,
+        messages: List<ChatMessage>,
+    ): ChatRequest {
         val host = url.toHttpUrlOrNull()?.host.orEmpty()
 
         // Each family reads its own field and some reject the others' fields with 400, so a
         // request carries only the one its host understands.
         return when {
             isOn(host, "openrouter.ai") -> ChatRequest(
-                model = settings.model,
+                model = model,
                 messages = messages,
                 reasoning = Reasoning(effort = level.effort),
             )
 
             GLM_HOSTS.any { isOn(host, it) } -> ChatRequest(
-                model = settings.model,
+                model = model,
                 messages = messages,
                 thinking = Thinking(if (level == ThinkingLevel.NONE) "disabled" else "enabled"),
             )
 
             else -> ChatRequest(
-                model = settings.model,
+                model = model,
                 messages = messages,
                 reasoningEffort = level.effort,
             )

@@ -1,5 +1,6 @@
 package com.jocmp.capy.ai
 
+import com.jocmp.aiprofiles.AiProfile
 import com.jocmp.capy.Article
 import com.jocmp.capy.common.TimeHelpers
 import kotlinx.coroutines.test.runTest
@@ -17,9 +18,7 @@ import kotlin.test.assertTrue
 
 class SummarizerTest {
     private val settings = AiSettings(
-        baseURL = "https://api.example.com/v1",
-        apiKey = "",
-        model = "test-model",
+        profiles = listOf(AiProfile(baseUrl = "https://api.example.com/v1", model = "test-model")),
     )
 
     private val hackerNewsJSON = """

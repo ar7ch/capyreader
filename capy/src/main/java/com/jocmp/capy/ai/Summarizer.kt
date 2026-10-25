@@ -7,6 +7,8 @@ import okhttp3.OkHttpClient
 data class Summary(
     val article: String,
     val discussion: String? = null,
+    /** The model that wrote [article], when known. */
+    val model: String? = null,
 )
 
 /**
@@ -39,6 +41,8 @@ class Summarizer(
 
         onProgress(null, SummaryStage.SUMMARIZING_ARTICLE)
 
+        var model: String? = null
+
         val articleSummary = chatClient.complete(
             settings = settings,
             system = ARTICLE_SYSTEM_PROMPT,
@@ -46,12 +50,14 @@ class Summarizer(
             onDelta = { partial ->
                 onProgress(Summary(article = partial), SummaryStage.SUMMARIZING_ARTICLE)
             },
+            onAnswered = { model = it.model },
         ).getOrElse { return Result.failure(it) }
 
         return Result.success(
             Summary(
                 article = articleSummary,
                 discussion = discussionSummary(settings, article, articleSummary, onProgress),
+                model = model,
             )
         )
     }

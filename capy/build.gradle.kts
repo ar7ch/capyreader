@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.retrofit2.retrofit)
     implementation(libs.sqldelight.coroutines.extensions)
     implementation(libs.okhttp.brotli)
+    api(project(":aiprofiles"))
     implementation(project(":feedbinclient"))
     implementation(project(":feedfinder"))
     implementation(project(":minifluxclient"))

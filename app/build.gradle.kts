@@ -153,6 +153,7 @@ dependencies {
     implementation(libs.coil.svg)
     implementation(libs.coil.video)
     implementation(libs.lazycolumnscrollbar)
+    implementation(libs.reorderable)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.androidx.workmanager)
