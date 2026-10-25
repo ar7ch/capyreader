@@ -35,7 +35,7 @@ class ChatClientTest {
 
         assertContains(body, "\"model\":\"test-model\"")
         assertContains(body, "\"reasoning_effort\":\"none\"")
-        assertContains(body, "\"thinking\":{\"type\":\"disabled\"}")
+        assertTrue(!body.contains("thinking"))
         assertContains(body, "system rules")
         assertContains(body, "<<<ARTICLE>>>")
     }
@@ -131,6 +131,61 @@ class ChatClientTest {
         assertContains(interceptor.bodies[0], "reasoning_effort")
         assertTrue(!interceptor.bodies[1].contains("reasoning_effort"))
         assertTrue(!interceptor.bodies[1].contains("thinking"))
+    }
+
+    @Test
+    fun complete_sendsThinkingLevelAndInstructions() = runTest {
+        val interceptor = RecordingInterceptor(chatResponse("ok"))
+        val custom = settings.copy(thinkingLevel = ThinkingLevel.HIGH, instructions = "Answer in German.")
+
+        ChatClient(interceptor.client()).complete(custom, system = "system rules", user = "u")
+
+        val body = interceptor.bodies.single()
+
+        assertContains(body, "\"reasoning_effort\":\"high\"")
+        assertTrue(!body.contains("thinking"))
+        assertContains(body, "system rules\\n\\nAdditional instructions from the user:\\nAnswer in German.")
+        assertTrue(!body.contains("\"reasoning\":"))
+    }
+
+    @Test
+    fun complete_sendsGLMThinkingSwitchOnly() = runTest {
+        val interceptor = RecordingInterceptor(chatResponse("ok"))
+        val glm = settings.copy(baseURL = "https://api.z.ai/api/paas/v4", thinkingLevel = ThinkingLevel.MEDIUM)
+
+        ChatClient(interceptor.client()).complete(glm, system = "s", user = "u")
+
+        val body = interceptor.bodies.single()
+
+        assertContains(body, "\"thinking\":{\"type\":\"enabled\"}")
+        assertTrue(!body.contains("reasoning"))
+    }
+
+    @Test
+    fun complete_matchesGLMHostsByWholeDomain() = runTest {
+        val interceptor = RecordingInterceptor(chatResponse("ok"))
+        val lookalike = settings.copy(baseURL = "https://api.quiz.ai/v1", thinkingLevel = ThinkingLevel.LOW)
+
+        ChatClient(interceptor.client()).complete(lookalike, system = "s", user = "u")
+
+        val body = interceptor.bodies.single()
+
+        assertContains(body, "\"reasoning_effort\":\"low\"")
+        assertTrue(!body.contains("thinking"))
+    }
+
+    @Test
+    fun complete_sendsOpenRouterReasoningObject() = runTest {
+        val interceptor = RecordingInterceptor(chatResponse("ok"))
+        val openRouter = settings.copy(baseURL = "https://openrouter.ai/api/v1", thinkingLevel = ThinkingLevel.LOW)
+
+        ChatClient(interceptor.client()).complete(openRouter, system = "s", user = "u")
+
+        val body = interceptor.bodies.single()
+
+        assertContains(body, "\"reasoning\":{\"effort\":\"low\"}")
+        assertTrue(!body.contains("reasoning_effort"))
+        assertTrue(!body.contains("thinking"))
     }
 
     @Test

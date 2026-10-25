@@ -20,7 +20,17 @@ data class AiSettings(
     val baseURL: String,
     val apiKey: String,
     val model: String,
+    val thinkingLevel: ThinkingLevel = ThinkingLevel.NONE,
+    /** Extra rules from the user, appended to the system message of every request. */
+    val instructions: String = "",
 )
+
+enum class ThinkingLevel(val effort: String) {
+    NONE("none"),
+    LOW("low"),
+    MEDIUM("medium"),
+    HIGH("high"),
+}
 
 /**
  * Minimal client for the OpenAI chat completions API. Works against OpenAI itself and against
@@ -52,11 +62,20 @@ class ChatClient(httpClient: OkHttpClient) {
         onDelta = onDelta,
     )
 
-    /** [messages] is the whole conversation so far, oldest first, starting with the system message. */
+    /**
+     * [messages] is the whole conversation so far, oldest first, starting with the system message.
+     * Runs on the IO dispatcher, so [onDelta] is called from a background thread.
+     */
     suspend fun complete(
         settings: AiSettings,
         messages: List<ChatMessage>,
         onDelta: (String) -> Unit = {},
+    ): Result<String> = withContext(Dispatchers.IO) { request(settings, messages, onDelta) }
+
+    private suspend fun request(
+        settings: AiSettings,
+        messages: List<ChatMessage>,
+        onDelta: (String) -> Unit,
     ): Result<String> {
         val url = completionsURL(settings.baseURL)
             ?: return Result.failure(InvalidSettingsError("Base URL is not a valid http or https URL"))
@@ -65,22 +84,17 @@ class ChatClient(httpClient: OkHttpClient) {
             return Result.failure(InvalidSettingsError("Model name is empty"))
         }
 
-        val request = ChatRequest(
-            model = settings.model,
-            messages = messages,
-        )
+        val request = chatRequest(url, settings, withInstructions(messages, settings.instructions))
 
         return try {
             var response = send(url, settings.apiKey, request)
 
-            // Summaries do not need chain of thought, so the request turns reasoning off two ways:
-            // reasoning_effort for OpenAI style servers and thinking for GLM, which ignores the
-            // former. A server that rejects either answers 400; retry once without both. A genuine
-            // 400 repeats on the plain request and is returned.
+            // A server that rejects the thinking field answers 400; retry once without it. A
+            // genuine 400 repeats on the plain request and is returned.
             if (response.code == 400) {
                 val body = response.body.string()
 
-                response = send(url, settings.apiKey, request.copy(reasoningEffort = null, thinking = null))
+                response = send(url, settings.apiKey, request.copy(reasoningEffort = null, thinking = null, reasoning = null))
 
                 if (!response.isSuccessful) {
                     return Result.failure(HttpError(code = 400, body = body.take(500)))
@@ -105,6 +119,48 @@ class ChatClient(httpClient: OkHttpClient) {
         } catch (e: Throwable) {
             Result.failure(e)
         }
+    }
+
+    private fun chatRequest(url: String, settings: AiSettings, messages: List<ChatMessage>): ChatRequest {
+        val level = settings.thinkingLevel
+
+        val host = url.toHttpUrlOrNull()?.host.orEmpty()
+
+        // Each family reads its own field and some reject the others' fields with 400, so a
+        // request carries only the one its host understands.
+        return when {
+            isOn(host, "openrouter.ai") -> ChatRequest(
+                model = settings.model,
+                messages = messages,
+                reasoning = Reasoning(effort = level.effort),
+            )
+
+            GLM_HOSTS.any { isOn(host, it) } -> ChatRequest(
+                model = settings.model,
+                messages = messages,
+                thinking = Thinking(if (level == ThinkingLevel.NONE) "disabled" else "enabled"),
+            )
+
+            else -> ChatRequest(
+                model = settings.model,
+                messages = messages,
+                reasoningEffort = level.effort,
+            )
+        }
+    }
+
+    private fun isOn(host: String, domain: String) = host == domain || host.endsWith(".$domain")
+
+    private fun withInstructions(messages: List<ChatMessage>, instructions: String): List<ChatMessage> {
+        val extra = instructions.trim()
+        val first = messages.firstOrNull()
+
+        if (extra.isBlank() || first?.role != "system") {
+            return messages
+        }
+
+        return listOf(first.copy(content = "${first.content}\n\nAdditional instructions from the user:\n$extra")) +
+            messages.drop(1)
     }
 
     private suspend fun send(url: String, apiKey: String, request: ChatRequest): Response {
@@ -180,6 +236,8 @@ class ChatClient(httpClient: OkHttpClient) {
         private const val READ_TIMEOUT_SECONDS = 300L
         private const val CALL_TIMEOUT_SECONDS = 360L
         private const val EVENT_STREAM_SUBTYPE = "event-stream"
+
+        private val GLM_HOSTS = listOf("z.ai", "bigmodel.cn")
         private const val DATA_PREFIX = "data:"
         private const val DONE_PAYLOAD = "[DONE]"
 
@@ -262,9 +320,16 @@ private data class ChatRequest(
     val temperature: Double = 0.2,
     val stream: Boolean = true,
     @SerialName("reasoning_effort")
-    val reasoningEffort: String? = "none",
+    val reasoningEffort: String? = null,
     // GLM ignores reasoning_effort; this is its own switch for the same thing.
-    val thinking: Thinking? = Thinking("disabled"),
+    val thinking: Thinking? = null,
+    // OpenRouter's form of the same setting.
+    val reasoning: Reasoning? = null,
+)
+
+@Serializable
+private data class Reasoning(
+    val effort: String,
 )
 
 @Serializable

@@ -41,6 +41,8 @@ import com.capyreader.app.common.RowItem
 import com.capyreader.app.preferences.AiProfile
 import com.capyreader.app.ui.components.FormSection
 import com.capyreader.app.ui.components.TextSwitch
+import com.capyreader.app.ui.settings.PreferenceSelect
+import com.jocmp.capy.ai.ThinkingLevel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -56,6 +58,12 @@ fun AISettingsPanel(
         updateApiKey = viewModel::updateApiKey,
         model = viewModel.model,
         updateModel = viewModel::updateModel,
+        thinkingLevel = viewModel.thinkingLevel,
+        updateThinkingLevel = viewModel::updateThinkingLevel,
+        instructions = viewModel.instructions,
+        updateInstructions = viewModel::updateInstructions,
+        testResult = viewModel.testResult,
+        testConnection = viewModel::testConnection,
         presets = viewModel.presets,
         profiles = viewModel.profiles,
         applyProfile = viewModel::applyProfile,
@@ -74,6 +82,12 @@ fun AISettingsPanelView(
     updateApiKey: (String) -> Unit,
     model: String,
     updateModel: (String) -> Unit,
+    thinkingLevel: ThinkingLevel,
+    updateThinkingLevel: (ThinkingLevel) -> Unit,
+    instructions: String,
+    updateInstructions: (String) -> Unit,
+    testResult: ConnectionTest?,
+    testConnection: () -> Unit,
     presets: List<AiProfile>,
     profiles: List<AiProfile>,
     applyProfile: (AiProfile) -> Unit,
@@ -123,6 +137,22 @@ fun AISettingsPanelView(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    PreferenceSelect(
+                        selected = thinkingLevel,
+                        update = updateThinkingLevel,
+                        options = ThinkingLevel.entries,
+                        label = R.string.settings_ai_thinking_level,
+                        optionText = { stringResource(thinkingLevelText(it)) },
+                    )
+                    TextField(
+                        value = instructions,
+                        onValueChange = updateInstructions,
+                        label = { Text(stringResource(R.string.settings_ai_instructions)) },
+                        supportingText = { Text(stringResource(R.string.settings_ai_instructions_hint)) },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    TestConnection(result = testResult, onTest = testConnection)
                     Text(
                         text = stringResource(R.string.settings_ai_privacy_notice),
                         style = typography.bodySmall,
@@ -147,6 +177,46 @@ fun AISettingsPanelView(
             }
         }
     }
+}
+
+@Composable
+private fun TestConnection(
+    result: ConnectionTest?,
+    onTest: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        TextButton(
+            enabled = result != ConnectionTest.Running,
+            onClick = onTest,
+        ) {
+            Text(stringResource(R.string.settings_ai_test))
+        }
+        val message = when (result) {
+            null -> null
+            ConnectionTest.Running -> stringResource(R.string.settings_ai_test_running)
+            is ConnectionTest.Passed -> stringResource(R.string.settings_ai_test_passed, result.reply)
+            is ConnectionTest.Unexpected -> stringResource(R.string.settings_ai_test_unexpected, result.reply)
+            is ConnectionTest.Failed -> stringResource(R.string.settings_ai_test_failed, result.message)
+        }
+        if (message != null) {
+            Text(
+                text = message,
+                style = typography.bodySmall,
+                color = if (result is ConnectionTest.Passed) colorScheme.onSurfaceVariant else colorScheme.error,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+private fun thinkingLevelText(level: ThinkingLevel) = when (level) {
+    ThinkingLevel.NONE -> R.string.settings_ai_thinking_level_none
+    ThinkingLevel.LOW -> R.string.settings_ai_thinking_level_low
+    ThinkingLevel.MEDIUM -> R.string.settings_ai_thinking_level_medium
+    ThinkingLevel.HIGH -> R.string.settings_ai_thinking_level_high
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

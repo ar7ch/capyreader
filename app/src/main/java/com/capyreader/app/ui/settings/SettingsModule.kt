@@ -36,6 +36,7 @@ val settingsModule = module {
     viewModel {
         AISettingsViewModel(
             appPreferences = get(),
+            chatClient = get(),
         )
     }
     viewModel {

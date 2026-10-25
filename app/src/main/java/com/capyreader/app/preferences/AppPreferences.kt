@@ -10,6 +10,7 @@ import com.capyreader.app.ui.articles.DefaultPaneExpansionIndex
 import com.capyreader.app.ui.articles.MarkReadPosition
 import com.jocmp.capy.ArticleFilter
 import com.jocmp.capy.ai.AiSettings
+import com.jocmp.capy.ai.ThinkingLevel
 import com.jocmp.capy.articles.FontOption
 import com.jocmp.capy.articles.FontSize
 import com.jocmp.capy.articles.SortOrder
@@ -107,6 +108,12 @@ class AppPreferences(context: Context) {
         val model: Preference<String>
             get() = preferenceStore.getString("ai_model", DEFAULT_MODEL)
 
+        val thinkingLevel: Preference<ThinkingLevel>
+            get() = preferenceStore.getEnum("ai_thinking_level", ThinkingLevel.NONE)
+
+        val instructions: Preference<String>
+            get() = preferenceStore.getString("ai_instructions")
+
         val profiles: Preference<List<AiProfile>>
             get() = preferenceStore.getObject(
                 key = "ai_profiles",
@@ -121,6 +128,8 @@ class AppPreferences(context: Context) {
             baseURL = baseURL.get().ifBlank { DEFAULT_BASE_URL },
             apiKey = apiKey.get(),
             model = model.get().trim(),
+            thinkingLevel = thinkingLevel.get(),
+            instructions = instructions.get(),
         )
 
         companion object {
@@ -135,6 +144,7 @@ class AppPreferences(context: Context) {
                 AiProfile(name = "OpenAI", baseURL = DEFAULT_BASE_URL, model = DEFAULT_MODEL),
                 AiProfile(name = "Z.AI (coding plan)", baseURL = "https://api.z.ai/api/coding/paas/v4", model = "glm-4.6"),
                 AiProfile(name = "Zhipu GLM", baseURL = "https://open.bigmodel.cn/api/paas/v4", model = "glm-4.6"),
+                AiProfile(name = "OpenRouter", baseURL = "https://openrouter.ai/api/v1", model = "openai/gpt-4.1-mini"),
                 AiProfile(name = "Ollama (local)", baseURL = "http://localhost:11434/v1", model = "qwen3"),
             )
         }
