@@ -15,6 +15,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType.Companion.PrimaryEditable
 import androidx.compose.material3.ExposedDropdownMenuAnchorType.Companion.PrimaryNotEditable
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -44,6 +45,7 @@ import com.capyreader.app.common.RowItem
 import com.capyreader.app.ui.components.FormSection
 import com.capyreader.app.ui.components.TextSwitch
 import com.capyreader.app.ui.settings.PreferenceSelect
+import com.jocmp.aiprofiles.AiModelSuggestions
 import com.jocmp.aiprofiles.AiProfile
 import com.jocmp.aiprofiles.ThinkingLevel
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -308,12 +310,9 @@ private fun ProfileEditor(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                TextField(
+                ModelField(
                     value = draft.model,
                     onValueChange = { edit(draft.copy(model = it)) },
-                    label = { Text(stringResource(R.string.settings_ai_model)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
                 )
                 TestConnection(
                     enabled = draft.usable,
@@ -343,6 +342,46 @@ private fun ProfileEditor(
             }
         },
     )
+}
+
+/** A free text field that also offers [AiModelSuggestions]. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelField(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+    ) {
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(stringResource(R.string.settings_ai_model)) },
+            singleLine = true,
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor(PrimaryEditable)
+                .fillMaxWidth(),
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            AiModelSuggestions.forEach { model ->
+                DropdownMenuItem(
+                    text = { Text(model) },
+                    onClick = {
+                        onValueChange(model)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
 }
 
 private fun AiProfile.trimmed() = copy(baseUrl = baseUrl.trim(), apiKey = apiKey.trim(), model = model.trim())

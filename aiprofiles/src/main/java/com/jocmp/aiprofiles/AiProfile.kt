@@ -38,6 +38,14 @@ enum class ThinkingLevel(val effort: String) {
     HIGH("high"),
 }
 
+/** Offered under the model field. They are OpenRouter IDs; any other name can be typed. */
+val AiModelSuggestions = listOf(
+    "deepseek/deepseek-v4.1-flash-1017",
+    "z-ai/glm-5.3-flash",
+    "openai/gpt-6-luna",
+    "xiaomi/mimo-v2.6-flash",
+)
+
 /** Common services as starting points. The user adds the key. */
 val AiPresets = listOf(
     AiProfile(name = "OpenAI", baseUrl = "https://api.openai.com/v1", model = "gpt-4.1-mini"),
