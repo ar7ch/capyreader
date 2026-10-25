@@ -263,7 +263,6 @@
     <string name="widget_spotlight_see_all">Ikusi guztiak</string>
     <string name="widget_spotlight_previous">Aurrekoa</string>
     <string name="widget_spotlight_next">Hurrengoa</string>
-    <string name="settings_display_miscellaneous_title">Askotarikoa</string>
     <string name="open_articles_in_browser">Ireki artikuluak nabigatzailean</string>
     <string name="auth_fields_freshrss_api_password">API pasahitza</string>
     <string name="auth_fields_miniflux_api_token">API fitxa</string>
@@ -273,7 +272,6 @@
     <string name="freshrss_visibility_option_folder">Karpeta</string>
     <string name="freshrss_visibility_option_feed">Jarioa</string>
     <string name="audio_player_pause">Pausatu</string>
-    <string name="badge_style_simple">Sinplea</string>
     <string name="account_settings_save_name">Izena gorde da</string>
     <string name="settings_accent_colors">Nabarmendu kolorea</string>
     <string name="font_option_system_default">Sistemaren defektuzkoa</string>
@@ -298,7 +296,6 @@
     <string name="settings_mark_read_on_scroll">Markatu irakurritakotzat korritzean</string>
     <string name="settings_gestures_enable_horizontal_pagination_title">Gaitu korritze horizontala</string>
     <string name="settings_gestures_enable_horizontal_pagination_subtitle">Irristatu ezkerrera edo eskuinera artikuluen artean nabigatzeko</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Ukitu beheko izkinak artikuluaren edukian nabigatzeko</string>
     <string name="settings_enable_high_contrast_dark_theme">Gaitu kontraste handiko gai iluna</string>
     <string name="settings_section_mark_all_as_read">Markatu guztiak irakurritako gisa</string>
     <string name="reader_image_visibility_show_on_wifi">Erakutsi irudiak soilik Wi-Fi bidez</string>
@@ -315,9 +312,6 @@
     <string name="tag_action_delete_message">Ziur zaude \"%1$s\" etiketa ezabatu nahi duzula?</string>
     <string name="tag_action_edit_error">Errorea etiketa eguneratzean</string>
     <string name="widget_receiver_spotlight_title">Fokua</string>
-    <string name="mark_read_position_toolbar">Tresna-barra</string>
-    <string name="mark_read_position_floating_action_button">Ekintza-botoi flotagarria</string>
-    <string name="mark_all_read_button_position">Markatu dena irakurritako gisa botoiaren posizioa</string>
     <string name="selected">Hautatuta</string>
     <string name="auth_fields_miniflux_use_api_token">Erabili API Token haren ordez</string>
     <string name="freshrss_visibility">Ikusgarritasuna</string>
@@ -327,8 +321,6 @@
     <string name="audio_player_skip_back">Egin atzera 30 segundo</string>
     <string name="audio_player_skip_forward">Egin aurrera 30 segundo</string>
     <string name="settings_panel_unread_counts_title">Irakurri gabekoen adierazleak</string>
-    <string name="settings_option_badge_style">Adierazlearen estiloa</string>
-    <string name="badge_style_exact">Zehatza</string>
     <string name="show_unread_badge">Erakutsi irakurri gabekoen adierazlea</string>
     <string name="article_actions_save_externally">Gorde</string>
     <string name="article_actions_save_externally_success">Gordeta</string>
@@ -338,13 +330,16 @@
     <string name="article_actions_delete_page_message">Ziur zaude orrialde hau ezabatu nahi duzula?</string>
     <string name="article_actions_delete_page_confirm">Ezabatu</string>
     <string name="settings_gestures_list_back_navigation_open_drawer">Ireki nabigazio-tiradera</string>
-    <string name="settings_gestures_reader_tap_to_page_title">Sakatu tinta elektronikoan desplazatzeko</string>
     <string name="after_read_all_behavior_open_drawer">Ireki nabigazio-tiradera</string>
-    <string name="settings_gestures_improve_talkback_title">Hobetu TalkBack</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Konfigurazio batzuk desaktibatzen ditu TalkBack-en testutik ahotsa hobetzeko</string>
     <string name="auth_fields_miniflux_use_password">Erabili pasahitza haren ordez</string>
     <string name="settings_account_refresh_value">%1$s %2$s(e)tan</string>
     <string name="article_byline_date_only">%1$s %2$s(e)tan</string>
     <string name="article_list_new_articles_pill">Artikulu berriak</string>
     <string name="article_byline">%1$s %2$s(e)tan %3$s bidez</string>
+    <string name="mark_read_position_toolbar">Tresna-barra</string>
+    <string name="mark_read_position_floating_action_button">Ekintza-botoi flotagarria</string>
+    <string name="mark_all_read_button_position">Markatu dena irakurritako gisa botoiaren posizioa</string>
+    <string name="article_list_sort_newest">Berriena</string>
+    <string name="article_list_sort_oldest">Zaharrena</string>
+    <string name="settings_section_content">Edukia</string>
 </resources>

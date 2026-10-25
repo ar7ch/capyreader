@@ -223,9 +223,7 @@
     <string name="opml_import_notification_cancel">Apturēt</string>
     <string name="image_preview_menu_option_none">Nerādīt</string>
     <string name="settings_gestures_list_back_navigation_system_back">Noklusējuma</string>
-    <string name="settings_gestures_reader_tap_to_page_title">Skārienritināšana (priekš e-grāmatas lasītājiem ar E-tinti)</string>
     <string name="settings_gestures_enable_horizontal_pagination_subtitle">Velciet pa kreisi vai pa labi, lai pārvietotos pa rakstiem</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Pieskarieties apakšējiem stūriem, lai pārvietotos pa raksta saturu</string>
     <string name="settings_enable_high_contrast_dark_theme">Iespējot augsta kontrasta tumšo motīvu</string>
     <string name="settings_section_mark_all_as_read">Atzīmēt visus kā lasītus⁣</string>
     <string name="after_read_all_behavior_default">Noklusējuma</string>
@@ -252,16 +250,10 @@
     <string name="actions_copy_link">Kopēt saiti</string>
     <string name="widget_headlines_see_more_button">Skatīt vairāk rakstus</string>
     <string name="widget_headlines_account_error">Vispirms pievienojiet kontu</string>
-    <string name="settings_gestures_improve_talkback_title">Uzlabot ekrānā redzamo teksta elementu pārveidošanu runā (TalkBack)</string>
     <string name="actions_share_link">Dalīties ar raksta saiti</string>
     <string name="widget_receiver_headlines_title">Rakstu virsraksti</string>
     <string name="widget_headlines_title">Svaigie rakstu virsraksti</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Atspējo dažus iestatījumus, lai uzlabotu ekrānā redzamo teksta elementu pārveidošanu runā (TalkBack)</string>
     <string name="settings_article_list_shorten_titles">Saīsināt virsrakstus</string>
-    <string name="mark_all_read_button_position">Pogas \"Atzīmēt visus kā lasītus\" pozīcija</string>
-    <string name="mark_read_position_toolbar">Rīkjosla</string>
-    <string name="mark_read_position_floating_action_button">Peldoša darbības poga</string>
-    <string name="settings_display_miscellaneous_title">Dažādi</string>
     <string name="add_account_miniflux_signup_prompt">Ja jums vēl nav Miniflux instances?</string>
     <string name="add_account_miniflux_signup_link_text">Vairāk informācijas.</string>
     <string name="settings_options_reader_pin_top_toolbar">Piespraust rīkjoslas</string>
@@ -291,8 +283,6 @@
     <string name="settings_section_experimental">Eksperimentālie</string>
     <string name="audio_player_play">Atskaņot</string>
     <string name="freshrss_nav_headline_categories">Kategorijas</string>
-    <string name="badge_style_simple">Vienkāršs</string>
-    <string name="badge_style_exact">Precīzs</string>
     <string name="save_page_submit">Saglabāt</string>
     <string name="add_link_subscribe">Abonēt</string>
     <string name="article_actions_delete_page_title">Dzēst</string>
@@ -324,7 +314,6 @@
     <string name="article_list_empty">Šeit nekā nav</string>
     <string name="settings_panel_unread_counts_title">Nelasīto ziņu skaitītājs</string>
     <string name="show_unread_badge">Rādīt nelasīto ziņu skaitītāju</string>
-    <string name="settings_option_badge_style">Skaitītāja stils</string>
     <string name="freshrss_visibility_option_main">Galvenā plūsma</string>
     <string name="theme_mode_label">Režīms</string>
     <string name="auth_fields_show_advanced">Papildu iestatījumi</string>
@@ -352,4 +341,7 @@
     <string name="settings_refresh_on_wifi_only">Atsvaidzināt tikai Wi-Fi tīklā</string>
     <string name="refresh_skipped_mobile">Neatsvaidzināt, ja izmanto mobilo tīklu</string>
     <string name="article_list_new_articles_pill">Jauni raksti</string>
+    <string name="mark_all_read_button_position">Pogas \"Atzīmēt visus kā lasītus\" pozīcija</string>
+    <string name="mark_read_position_toolbar">Rīkjosla</string>
+    <string name="mark_read_position_floating_action_button">Peldoša darbības poga</string>
 </resources>

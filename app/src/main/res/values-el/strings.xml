@@ -30,7 +30,7 @@
         <item quantity="other">Κάθε %d ώρες</item>
     </plurals>
     <string name="refresh_feeds_menu_label">Ανανέωση Ροών</string>
-    <string name="nav_headline_folders">Ετικέτες</string>
+    <string name="nav_headline_folders">Φάκελοι</string>
     <string name="nav_headline_saved_searches">Αναζητήσεις</string>
     <string name="nav_headline_feeds">Ροές</string>
     <string name="nav_add_feed">Προσθήκη Ροής</string>
@@ -127,7 +127,7 @@
     <string name="theme_menu_option_light">Φωτεινό</string>
     <string name="theme_menu_option_dark">Σκοτεινό</string>
     <string name="theme_menu_option_system_default">Προεπιλογή συστήματος</string>
-    <string name="edit_feed_folders">Ετικέτες</string>
+    <string name="edit_feed_folders">Φάκελοι</string>
     <string name="settings_option_in_app_browser">Χρήση περιηγητή εντός εφαρμογής</string>
     <string name="opml_import_notification_cancel">Διακοπή</string>
     <string name="image_preview_menu_option_none">Καμία</string>
@@ -206,7 +206,7 @@
     <string name="action_share">Κοινοποίηση</string>
     <string name="crash_log_export_item_title">Κοινοποίηση καταγραφής σφαλμάτων</string>
     <string name="crash_log_export_item_subtitle">Αποθηκεύει αρχεία καταγραφής σε ένα αρχείο για να τα κοινοποιήσεις με τον προγραμματιστή</string>
-    <string name="edit_feed_folders_section">Ετικέτες</string>
+    <string name="edit_feed_folders_section">Φάκελοι</string>
     <string name="edit_feed_notifications_title">Ενεργοποίηση ειδοποιήσεων</string>
     <string name="notifications_permissions_disabled_call_to_action">Ρυθμίσεις</string>
     <string name="notifications_permission_disabled_title">Η άδεια ειδοποιήσεων είναι ανενεργή</string>
@@ -215,7 +215,6 @@
     <string name="article_view_open_externally">Άνοιγμα εξωτερικά</string>
     <string name="settings_confirm_mark_all_read">Επιβεβαίωση ανάγνωσης όλων</string>
     <string name="settings_mark_read_on_scroll">Ανάγνωση κατά τη κύλιση</string>
-    <string name="settings_gestures_reader_tap_to_page_title">E Ink πάτημα για κύλιση</string>
     <string name="settings_gestures_enable_horizontal_pagination_title">Ενεργοποίηση οριζόντιας κύλισης</string>
     <string name="settings_gestures_enable_horizontal_pagination_subtitle">Κύλιση αριστερά ή δεξιά για πλοήγηση σε άρθρα</string>
     <string name="after_read_all_behavior_label">Μετά την Ανάγνωση Όλων</string>
@@ -231,9 +230,8 @@
     <string name="end_of_feed_text">Τα \'δες όλα!</string>
     <string name="feed_nav_drawer_title">Ροές</string>
     <string name="search_bar_placeholder">Αναζήτηση</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Πάτα τις κάτω γωνίες για να πλοηγηθείς στο περιεχόμενο του άρθρου</string>
     <string name="settings_enable_high_contrast_dark_theme">Ενεργοποίηση σκοτεινού θέματος υψηλής αντίθεσης</string>
-    <string name="settings_section_mark_all_as_read">Επισήμανση Όλων ως Αναγνωσμένα</string>
+    <string name="settings_section_mark_all_as_read">Επισήμανση Όλων Ως Αναγνωσμένα</string>
     <string name="settings_section_browser">Περιηγητής</string>
     <string name="reader_image_visibility_show_on_wifi">Εμφάνιση εικόνων μόνο στο Wi-Fi</string>
     <string name="reader_image_visibility_always_hide">Αποκλεισμός εικόνων</string>
@@ -253,8 +251,6 @@
     <string name="widget_headlines_title">Τελευταίες Επικεφαλίδες</string>
     <string name="widget_headlines_see_more_button">Δες περισσότερα άρθρα</string>
     <string name="widget_headlines_account_error">Πρόσθεσε ένα λογαριασμό πρώτα</string>
-    <string name="settings_gestures_improve_talkback_title">Βελτίωση TalkBack</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Απενεργοποιεί κάποιες ρυθμίσεις για βελτίωση του κειμένου σε ομιλία TalkBack</string>
     <string name="folder_action_delete_confirm">Διαγραφή</string>
     <string name="folder_name_title">\'Ονομα</string>
     <string name="folder_action_edit_success">Ετικέτα ενημερώθηκε</string>
@@ -262,10 +258,6 @@
     <string name="actions_copy_link">Αντιγραφή συνδέσμου</string>
     <string name="actions_share_link">Κοινοποίηση συνδέσμου</string>
     <string name="widget_receiver_headlines_title">Επικεφαλίδες</string>
-    <string name="mark_read_position_toolbar">Γραμμή εργαλείων</string>
-    <string name="mark_read_position_floating_action_button">Αιωρούμενο Κουμπί Ενέργειας</string>
-    <string name="mark_all_read_button_position">Θέση Κουμπιού Επισήμανση Όλων ως Αναγνωσμένα</string>
-    <string name="settings_display_miscellaneous_title">Διάφορα</string>
     <string name="auth_fields_client_certificate">Πιστοποιητικό πελάτη (προαιρετικό)</string>
     <string name="auth_fields_remove_client_cert">Αφαίρεση πιστοποιητικού πελάτη</string>
     <string name="theme_mode_system">Σύστημα</string>
@@ -339,9 +331,6 @@
     <string name="auth_fields_hide_advanced">Απόκρυψη προηγμένων επιλογών</string>
     <string name="freshrss_visibility">Ορατότητα</string>
     <string name="settings_panel_unread_counts_title">Σήματα Μη Αναγνωσμένου</string>
-    <string name="settings_option_badge_style">Στυλ Σήματος</string>
-    <string name="badge_style_simple">Απλό</string>
-    <string name="badge_style_exact">Ακριβές</string>
     <string name="show_unread_badge">Εμφάνιση Σήματος Μη Αναγνωσμένου</string>
     <string name="article_actions_save_externally">Αποθήκευση</string>
     <string name="article_actions_save_externally_success">Αποθηκεύτηκε</string>
@@ -350,4 +339,8 @@
     <string name="article_actions_delete_page_title">Διαγραφή</string>
     <string name="article_actions_delete_page_message">Σίγουρα θες να διαγράψεις αυτή τη σελίδα;</string>
     <string name="article_actions_delete_page_confirm">Διαγραφή</string>
+    <string name="freshrss_visibility_option_main">Κύρια Ροή</string>
+    <string name="mark_read_position_toolbar">Γραμμή εργαλείων</string>
+    <string name="mark_read_position_floating_action_button">Αιωρούμενο Κουμπί Ενέργειας</string>
+    <string name="mark_all_read_button_position">Θέση Κουμπιού Επισήμανση Όλων ως Αναγνωσμένα</string>
 </resources>

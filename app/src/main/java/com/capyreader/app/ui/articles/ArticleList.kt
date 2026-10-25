@@ -1,6 +1,12 @@
 package com.capyreader.app.ui.articles
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.MaterialTheme.motionScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +37,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemKey
 import com.capyreader.app.R
 import com.capyreader.app.preferences.AppPreferences
+import com.capyreader.app.ui.isSinglePane
 import com.jocmp.capy.Article
 import com.jocmp.capy.MarkRead
 import kotlinx.coroutines.delay
@@ -39,13 +47,15 @@ import java.time.LocalDateTime
 @Composable
 fun ArticleList(
     articles: LazyPagingItems<Article>,
-    onSelect: (articleID: String) -> Unit,
+    onSelect: (article: Article) -> Unit,
     selectedArticleKey: String?,
     listState: LazyListState,
     onMarkAllRead: (range: MarkRead) -> Unit = {},
     enableMarkReadOnScroll: Boolean = false,
     dimReadArticles: Boolean = true,
+    showNewArticles: Boolean = false,
     scrollToTop: () -> Unit = {},
+    contentPadding: PaddingValues = PaddingValues(),
 ) {
     val articleOptions = rememberArticleOptions().copy(
         dim = dimReadArticles,
@@ -56,9 +66,10 @@ fun ArticleList(
 
     Box(Modifier.fillMaxSize()) {
         key(listState) {
-            LazyScrollbar(state = listState) {
+            ArticleListScrollbar(listState = listState) {
                 LazyColumn(
                     state = listState,
+                    contentPadding = contentPadding,
                     modifier = Modifier
                         .fillMaxSize()
                         .onGloballyPositioned { coordinates ->
@@ -77,7 +88,7 @@ fun ArticleList(
                                     index = index,
                                     selected = selectedArticleKey == item.id,
                                     onSelect = {
-                                        onSelect(it)
+                                        onSelect(item)
                                     },
                                     onMarkAllRead = onMarkAllRead,
                                     currentTime = currentTime,
@@ -100,6 +111,40 @@ fun ArticleList(
             }
         }
 
+        AnimatedVisibility(
+            visible = showNewArticles,
+            enter = slideInVertically(animationSpec = motionScheme.defaultSpatialSpec()) { -it } +
+                fadeIn(animationSpec = motionScheme.defaultEffectsSpec()),
+            exit = slideOutVertically(animationSpec = motionScheme.fastSpatialSpec()) { -it } +
+                fadeOut(animationSpec = motionScheme.fastEffectsSpec()),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 8.dp),
+        ) {
+            NewArticlesButton(onClick = scrollToTop)
+        }
+    }
+}
+
+/**
+ * In a two-pane layout the list stays beside the reader, so keep the selected article in view
+ * (e.g. when stepping next/previous) by scrolling to it when it isn't already visible.
+ */
+@Composable
+fun ScrollToSelectedArticleEffect(
+    selectedArticleKey: String?,
+    articles: LazyPagingItems<Article>,
+    listState: LazyListState,
+) {
+    val isSinglePane = isSinglePane()
+
+    LaunchedEffect(selectedArticleKey, isSinglePane, articles.itemCount) {
+        if (isSinglePane) return@LaunchedEffect
+        val id = selectedArticleKey ?: return@LaunchedEffect
+        val index = articles.itemSnapshotList.indexOfFirst { it?.id == id }
+        if (index > -1 && listState.layoutInfo.visibleItemsInfo.none { it.index == index }) {
+            listState.animateScrollToItem(index)
+        }
     }
 }
 

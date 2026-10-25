@@ -226,7 +226,6 @@
     <string name="settings_mark_read_on_scroll">סמן כנקרא בזמן גלילה</string>
     <string name="settings_gestures_enable_horizontal_pagination_title">הפעל גלילה רוחבית</string>
     <string name="settings_gestures_enable_horizontal_pagination_subtitle">דפדף שמאלה או ימינה כדי לנווט בין מאמרים</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">לחץ על הפינות התחתונות כדי לנווט בתוכן המאמר</string>
     <string name="settings_enable_high_contrast_dark_theme">הפעל ערכת נושא עם ניגודיות גבוהה</string>
     <string name="settings_section_mark_all_as_read">סמן הכל כנקרא</string>
     <string name="settings_section_browser">דפדפן</string>
@@ -268,15 +267,8 @@
     <string name="widget_headlines_title">כותרות אחרונות</string>
     <string name="widget_headlines_see_more_button">הצג עוד מאמרים</string>
     <string name="widget_headlines_account_error">הוסף חשבון תחילה</string>
-    <string name="settings_gestures_improve_talkback_title">שפר TalkBack</string>
-    <string name="settings_gestures_improve_talkback_subtitle">בטל אפשרויות כדי לשפר TalkBack text-to-speech</string>
-    <string name="mark_read_position_toolbar">תפריט כלים</string>
-    <string name="mark_read_position_floating_action_button">כפתור פעולה מרחף</string>
-    <string name="mark_all_read_button_position">מיקום כפתור סמן הכל כנקרא</string>
-    <string name="settings_display_miscellaneous_title">שונות</string>
     <string name="article_byline">%1$s ב-%2$s על ידי %3$s</string>
     <string name="article_byline_date_only">%1$s ב- %2$s</string>
-    <string name="settings_gestures_reader_tap_to_page_title">הקש בדיו אלקטרוני כדי לגלול</string>
     <string name="add_link_title">הוסף קישור</string>
     <string name="tab_add_feed">הוסף פיד</string>
     <string name="tab_save_page">שמור עמוד</string>
@@ -319,9 +311,6 @@
     <string name="audio_player_skip_back">דלג אחורה 30 שניות</string>
     <string name="audio_player_skip_forward">דלג קדימה 30 שניות</string>
     <string name="settings_panel_unread_counts_title">תגים שלא נקראו</string>
-    <string name="settings_option_badge_style">סגנון תג</string>
-    <string name="badge_style_simple">פשוט</string>
-    <string name="badge_style_exact">מדויק</string>
     <string name="show_unread_badge">הצגת תגים שלא נקראו</string>
     <string name="article_actions_save_externally">שמור</string>
     <string name="article_actions_save_externally_success">נשמר</string>
@@ -330,4 +319,7 @@
     <string name="article_actions_delete_page_title">הסרה</string>
     <string name="article_actions_delete_page_message">האם אתה בטוח שאתה רוצה למחוק את הדף הזה?</string>
     <string name="article_actions_delete_page_confirm">הסרה</string>
+    <string name="mark_read_position_toolbar">תפריט כלים</string>
+    <string name="mark_read_position_floating_action_button">כפתור פעולה מרחף</string>
+    <string name="mark_all_read_button_position">מיקום כפתור סמן הכל כנקרא</string>
 </resources>

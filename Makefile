@@ -4,14 +4,6 @@ FASTLANE ?= bundle exec fastlane
 
 .PHONY: test release-secrets deploy-production
 
-.PHONY: assets
-assets:
-	$(MAKE) -C article_forge clean build
-
-.PHONY: check
-check: ## Type-check JavaScript files
-	npx -p typescript tsc --noEmit
-
 .PHONY: bump-release-dev
 bump-release-dev: ## Bump GitHub version
 	./scripts/bumpver update --tag=dev --push
@@ -24,8 +16,12 @@ bump-release-production: ## Bump Google Play version
 changelog: ## Prep next release notes
 	./scripts/changelog
 
+.PHONY: review-opml
+review-opml: ## Save Play review account subscriptions, e.g. OPML=~/Desktop/subscriptions.xml
+	./scripts/review-opml $(OPML)
+
 test: ## Run all tests
-	$(FASTLANE) test
+	./gradlew test --build-cache
 
 deploy-production: release-secrets
 	$(FASTLANE) production
@@ -44,7 +40,11 @@ release-secrets: shared-release-secrets
 shared-release-secrets:
 	echo ${ENCODED_GOOGLE_SERVICES} | base64 --decode > ./app/google-services.json
 	echo ${ENCODED_RELEASE_KEYSTORE} | base64 --decode > ./release.keystore
-	echo ${ENCODED_SECRETS_PROPERTIES} | base64 --decode > ./secrets.properties
+	: > ./secrets.properties
+	for name in $$(compgen -e | grep '^PROP_'); do \
+		key=$$(echo "$${name#PROP_}" | tr '[:upper:]' '[:lower:]'); \
+		echo "$$key=$${!name}" >> ./secrets.properties; \
+	done
 
 .PHONY: bench-profile
 bench-profile: ## Run refresh profile benchmark

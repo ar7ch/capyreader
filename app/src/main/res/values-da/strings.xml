@@ -232,10 +232,8 @@
     <string name="article_view_open_externally">Åbn eksternt</string>
     <string name="settings_confirm_mark_all_read">Bekræft markering af alle artikler som læst</string>
     <string name="settings_mark_read_on_scroll">Marker som læst ved scroll</string>
-    <string name="settings_gestures_reader_tap_to_page_title">E-ink tryk for at scrolle</string>
     <string name="settings_gestures_enable_horizontal_pagination_title">Slå horisontal scroll til</string>
     <string name="settings_gestures_enable_horizontal_pagination_subtitle">Swipe til venstre eller højre for artikelnavigation</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Tryk på de nederste hjørner for at navigere artikelindhold</string>
     <string name="settings_enable_high_contrast_dark_theme">Slå mørkt tema med høj kontrast til</string>
     <string name="settings_section_mark_all_as_read">Marker alle som læst</string>
     <string name="settings_section_browser">Browser</string>
@@ -274,12 +272,6 @@
     <string name="widget_headlines_title">Seneste overskrifter</string>
     <string name="widget_headlines_see_more_button">Se flere artikler</string>
     <string name="widget_headlines_account_error">Tilføj en konto først</string>
-    <string name="settings_gestures_improve_talkback_title">Forbedr TalkBack</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Deaktiverer nogle indstillinger for at forbedre TalkBack tekst-til-tale</string>
-    <string name="mark_read_position_toolbar">Værktøjslinje</string>
-    <string name="mark_read_position_floating_action_button">Flydende handlingsknap</string>
-    <string name="mark_all_read_button_position">Position af marker alle som læst-knap</string>
-    <string name="settings_display_miscellaneous_title">Diverse</string>
     <string name="open_articles_in_browser">Åbn artikler i browser</string>
     <string name="selected">Valgt</string>
     <string name="auth_fields_freshrss_api_password">API adgangskode</string>
@@ -291,4 +283,7 @@
     <string name="audio_player_close">Luk lydafspiller</string>
     <string name="audio_player_skip_back">Gå 30 sekunder tilbage</string>
     <string name="audio_player_skip_forward">Gå 30 sekunder frem</string>
+    <string name="mark_read_position_toolbar">Værktøjslinje</string>
+    <string name="mark_read_position_floating_action_button">Flydende handlingsknap</string>
+    <string name="mark_all_read_button_position">Position af marker alle som læst-knap</string>
 </resources>

@@ -24,6 +24,7 @@ internal fun articleMapper(
     openInBrowser: Boolean,
     feedURL: String?,
     siteURL: String?,
+    readLater: Boolean,
     updatedAt: Long?,
     starred: Boolean,
     read: Boolean,
@@ -49,6 +50,7 @@ internal fun articleMapper(
         openInBrowser = openInBrowser,
         enclosureType = EnclosureType.from(enclosureType),
         commentsURL = commentsURL,
+        isReadLater = readLater,
     )
 }
 
@@ -94,6 +96,7 @@ internal fun listMapper(
         openInBrowser = openInBrowser,
         feedURL = null,
         siteURL = null,
+        readLater = false,
         updatedAt = updatedAt,
         starred = starred ?: false,
         read = read ?: false,

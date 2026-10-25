@@ -204,9 +204,7 @@
     <string name="add_account_feedbin_signup_link_text">Создайте его здесь.</string>
     <string name="add_account_freshrss_signup_prompt">У вас нет экземпляра FreshRSS?</string>
     <string name="add_account_local_subtitle">На вашем устройстве</string>
-    <string name="settings_gestures_reader_tap_to_page_title">Прокрутка касанием (для E-ink)</string>
     <string name="settings_enable_high_contrast_dark_theme">Включить высококонтрастную темную тему</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Коснитесь нижних углов, чтобы перемещаться по содержимому статьи</string>
     <string name="settings_mark_read_on_scroll">Отметить как прочитанное при прокрутке</string>
     <string name="settings_section_mark_all_as_read">Отметить всё как прочитанное</string>
     <string name="settings_section_browser">Браузер</string>
@@ -267,15 +265,9 @@
     <string name="widget_headlines_title">Последние рубрики</string>
     <string name="widget_headlines_see_more_button">См. ещё статьи</string>
     <string name="widget_headlines_account_error">Сперва добавьте аккаунт</string>
-    <string name="settings_gestures_improve_talkback_title">Улучшить озвучку элементов на экране</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Отключает некоторые настройки для улучшения озвучки элементов на экране</string>
     <string name="settings_options_reader_pin_top_toolbar">Закрепить панели инструментов</string>
     <string name="add_account_miniflux_signup_prompt">У вас нет сервера Miniflux?</string>
     <string name="add_account_miniflux_signup_link_text">Узнать больше.</string>
-    <string name="mark_read_position_toolbar">Панель инструментов</string>
-    <string name="mark_read_position_floating_action_button">Плавающая кнопка действия</string>
-    <string name="mark_all_read_button_position">Положение кнопки «Отметить всё прочитанным»</string>
-    <string name="settings_display_miscellaneous_title">Разное</string>
     <string name="theme_dynamic">Динамическая</string>
     <string name="theme_newsprint">Газетная бумага</string>
     <string name="theme_monochrome">Монохромная</string>
@@ -319,10 +311,7 @@
     <string name="add_link_subscribe">Подписаться</string>
     <string name="add_link_feed_added">Лента добавлена</string>
     <string name="add_link_page_saved">Страница сохранена</string>
-    <string name="settings_option_badge_style">Стиль счётчиков</string>
     <string name="settings_panel_unread_counts_title">Счётчики непрочитанных</string>
-    <string name="badge_style_simple">Простой</string>
-    <string name="badge_style_exact">Точный</string>
     <string name="show_unread_badge">Показывать счетчик непрочитанных</string>
     <string name="article_actions_save_externally">Сохранить</string>
     <string name="article_actions_save_externally_success">Сохранено</string>
@@ -359,4 +348,7 @@
     <string name="article_list_new_articles_pill">Новые публикации</string>
     <string name="settings_refresh_on_wifi_only">Обновлять только через Wi-Fi</string>
     <string name="refresh_skipped_mobile">Обновление пропущено в мобильной сети</string>
+    <string name="mark_read_position_toolbar">Панель инструментов</string>
+    <string name="mark_read_position_floating_action_button">Плавающая кнопка действия</string>
+    <string name="mark_all_read_button_position">Положение кнопки «Отметить всё прочитанным»</string>
 </resources>

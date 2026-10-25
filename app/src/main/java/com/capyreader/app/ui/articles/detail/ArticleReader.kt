@@ -1,32 +1,36 @@
 package com.capyreader.app.ui.articles.detail
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.core.net.toUri
 import com.capyreader.app.R
 import com.capyreader.app.common.AudioEnclosure
 import com.capyreader.app.common.Media
-import com.capyreader.app.common.rememberTalkbackPreference
 import com.capyreader.app.common.shareImage
 import com.capyreader.app.preferences.AppPreferences
 import com.capyreader.app.preferences.ReaderImageVisibility
@@ -35,27 +39,47 @@ import com.capyreader.app.ui.LocalConnectivity
 import com.capyreader.app.ui.LocalLinkOpener
 import com.capyreader.app.ui.articles.ColumnScrollbar
 import com.capyreader.app.ui.articles.media.ImageSaver
-import com.capyreader.app.ui.components.WebView
-import com.capyreader.app.ui.components.WebViewState
-import com.capyreader.app.ui.components.rememberSaveableShareLink
-import com.capyreader.app.ui.components.rememberWebViewState
+import com.capyreader.app.ui.articles.reader.AnchorRegistry
+import com.capyreader.app.ui.articles.reader.ArticleReaderContent
+import com.capyreader.app.ui.articles.reader.LocalReaderPageHeight
+import com.capyreader.app.ui.articles.reader.PageDirection
+import com.capyreader.app.ui.articles.reader.LocalReaderStyle
+import com.capyreader.app.ui.articles.reader.ReaderActions
+import com.capyreader.app.ui.articles.reader.RestoreReadingPositionEffect
+import com.capyreader.app.ui.articles.reader.galleryItems
+import com.capyreader.app.ui.articles.reader.largestSource
+import com.capyreader.app.ui.articles.reader.rememberReaderStyle
+import com.capyreader.app.ui.collectChangesWithCurrent
 import com.capyreader.app.ui.components.LocalSnackbarHost
+import com.capyreader.app.ui.components.rememberSaveableShareLink
 import com.jocmp.capy.Article
 import com.jocmp.capy.common.launchIO
 import com.jocmp.capy.common.launchUI
 import com.jocmp.capy.common.withUIContext
+import com.jocmp.mallet.LinearArticle
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import kotlin.math.roundToInt
 
 @Composable
 fun ArticleReader(
     article: Article,
+    flattened: LinearArticle?,
+    scrollState: ScrollState,
     pinToolbars: Boolean,
+    showToolbars: Boolean,
+    onHideToolbars: () -> Unit,
+    onToggleToolbars: () -> Unit,
+    onTurnPastArticle: (PageDirection) -> Unit,
+    openAtEnd: Boolean,
+    onOpenedAtEnd: () -> Unit,
     onSelectMedia: (media: Media) -> Unit,
+    onFullscreenVideo: (uri: String) -> Unit,
     onSelectAudio: (audio: AudioEnclosure) -> Unit = {},
     onPauseAudio: () -> Unit = {},
     currentAudioUrl: String? = null,
     isAudioPlaying: Boolean = false,
+    isAudioBuffering: Boolean = false,
+    appPreferences: AppPreferences = koinInject(),
 ) {
     val (shareLink, setShareLink) = rememberSaveableShareLink()
     val (shareImageUrl, setImageUrl) = rememberSaveable { mutableStateOf<String?>(null) }
@@ -109,41 +133,112 @@ fun ArticleReader(
         setImageUrl(null)
     }
 
-    val webViewState = rememberWebViewState(
-        key = article.id,
-        onNavigateToMedia = onSelectMedia,
-        onRequestLinkDialog = { setShareLink(it) },
-        onRequestImageDialog = { setImageUrl(it) },
-        onOpenLink = { linkOpener.open(it) },
-        onOpenAudioPlayer = onSelectAudio,
-        onPauseAudio = onPauseAudio,
-        currentAudioUrl = currentAudioUrl,
-        isAudioPlaying = isAudioPlaying,
+    val anchors = remember(scrollState) { AnchorRegistry(scrollState) }
+
+    RestoreReadingPositionEffect(
+        articleID = article.id,
+        anchors = anchors,
+        scrollState = scrollState,
     )
 
-    LaunchedEffect(currentAudioUrl, isAudioPlaying) {
-        webViewState.updateAudioPlayState(currentAudioUrl, isAudioPlaying)
+    LaunchedEffect(openAtEnd) {
+        if (!openAtEnd) {
+            return@LaunchedEffect
+        }
+
+        onOpenedAtEnd()
+
+        var pinnedEnd = 0
+
+        snapshotFlow { scrollState.maxValue }.collect { end ->
+            if (scrollState.value >= pinnedEnd) {
+                scrollState.scrollTo(end)
+                pinnedEnd = end
+            }
+        }
+    }
+
+    val currentFlattened by rememberUpdatedState(flattened)
+    val currentOnSelectMedia by rememberUpdatedState(onSelectMedia)
+    val currentOnFullscreenVideo by rememberUpdatedState(onFullscreenVideo)
+    val currentOnSelectAudio by rememberUpdatedState(onSelectAudio)
+    val currentArticle by rememberUpdatedState(article)
+
+    val externalUrl = article.url?.toString() ?: article.siteURL
+    val openExternalLink = {
+        externalUrl?.let { linkOpener.open(it.toUri()) }
+        Unit
+    }
+
+    val actions = remember(article.id, linkOpener) {
+        ReaderActions(
+            onLinkClick = { url, elementIndex ->
+                scope.launch {
+                    val scrolled = elementIndex != null && anchors.scrollTo(elementIndex)
+
+                    if (!scrolled) {
+                        linkOpener.open(url.toUri())
+                    }
+                }
+            },
+            onLinkLongPress = { link -> setShareLink(link) },
+            onImageClick = { image ->
+                val items = currentFlattened?.galleryItems().orEmpty()
+                val clickedUrl = image.largestSource()?.imgUri
+                val index = items.indexOfFirst { it.url == clickedUrl }.coerceAtLeast(0)
+
+                if (items.isNotEmpty()) {
+                    currentOnSelectMedia(Media(images = items, startIndex = index))
+                }
+            },
+            onImageLongPress = { url -> setImageUrl(url) },
+            onAudioClick = { url ->
+                currentOnSelectAudio(
+                    AudioEnclosure(
+                        articleID = currentArticle.id,
+                        url = url,
+                        title = currentArticle.title,
+                        feedName = currentArticle.feedName,
+                        durationSeconds = null,
+                        artworkUrl = null,
+                    )
+                )
+            },
+            onFullscreenVideo = { uri -> currentOnFullscreenVideo(uri) },
+        )
     }
 
     val showImages = rememberImageVisibility()
-    val improveTalkback by rememberTalkbackPreference()
+    val readerStyle = rememberReaderStyle(showImages = showImages)
 
-    if (improveTalkback) {
-        Column(
-            Modifier.fillMaxSize()
+    CompositionLocalProvider(
+        LocalReaderStyle provides readerStyle,
+    ) {
+        ScrollableArticle(
+            scrollState = scrollState,
+            pinToolbars = pinToolbars,
+            showToolbars = showToolbars,
+            onHideToolbars = onHideToolbars,
+            onToggleToolbars = onToggleToolbars,
+            onTurnPastArticle = onTurnPastArticle,
+            onContentPositioned = {
+                anchors.contentCoordinates = it
+            },
         ) {
-            WebView(
-                modifier = Modifier.fillMaxSize(),
-                state = webViewState,
+            ArticleReaderContent(
                 article = article,
-                showImages = showImages,
+                flattened = flattened,
+                actions = actions,
+                onOpenExternalLink = openExternalLink,
+                currentAudioUrl = currentAudioUrl,
+                isAudioPlaying = isAudioPlaying,
+                isAudioBuffering = isAudioBuffering,
+                onSelectAudio = onSelectAudio,
+                onPauseAudio = onPauseAudio,
+                onElementPositioned = { index, coordinates -> anchors.register(index, coordinates) },
             )
         }
-    } else {
-        ScrollableWebView(webViewState, article, showImages, pinToolbars)
     }
-
-    ArticleStyleListener(webView = webViewState.webView)
 
     if (shareLink != null) {
         ShareLinkDialog(
@@ -167,54 +262,44 @@ fun ArticleReader(
 }
 
 @Composable
-fun ScrollableWebView(webViewState: WebViewState, article: Article, showImages: Boolean, pinToolbars: Boolean) {
-    var maxHeight by remember { mutableFloatStateOf(0f) }
-    val scrollState = rememberSaveable(article.id, saver = ScrollState.Saver) {
-        ScrollState(initial = 0)
-    }
-
-    var lastScrollYPercent by rememberSaveable(article.id) { mutableFloatStateOf(0f) }
-
-    CornerTapGestureScroll(
-        maxArticleHeight = maxHeight,
+private fun ScrollableArticle(
+    scrollState: ScrollState,
+    pinToolbars: Boolean,
+    showToolbars: Boolean,
+    onHideToolbars: () -> Unit,
+    onToggleToolbars: () -> Unit,
+    onTurnPastArticle: (PageDirection) -> Unit,
+    onContentPositioned: (coordinates: androidx.compose.ui.layout.LayoutCoordinates) -> Unit,
+    content: @Composable () -> Unit,
+) {
+    PageTurnGestures(
         scrollState = scrollState,
         pinToolbars = pinToolbars,
+        showToolbars = showToolbars,
+        onHideToolbars = onHideToolbars,
+        onToggleToolbars = onToggleToolbars,
+        onTurnPastArticle = onTurnPastArticle,
     ) {
-        ColumnScrollbar(state = scrollState) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .onGloballyPositioned { coordinates ->
-                        maxHeight = coordinates.size.height.toFloat()
-                    }
-            ) {
-                if (!pinToolbars) {
-                    Spacer(Modifier.height(ArticleBarDefaults.topBarOffset))
-                }
-                WebView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight(),
-                    state = webViewState,
-                    article = article,
-                    showImages = showImages,
-                )
-            }
-        }
-    }
+        BoxWithConstraints {
+            val pageHeight = maxHeight - WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    LaunchedEffect(Unit) {
-        snapshotFlow { scrollState.value to maxHeight }
-            .collect { (value, height) ->
-                if (value > 0 && height > 0f) {
-                    lastScrollYPercent = value / height
+            ColumnScrollbar(state = scrollState) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .onGloballyPositioned { coordinates ->
+                            onContentPositioned(coordinates)
+                        }
+                ) {
+                    if (!pinToolbars) {
+                        Spacer(Modifier.height(ArticleBarDefaults.topBarOffset))
+                    }
+                    CompositionLocalProvider(LocalReaderPageHeight provides pageHeight) {
+                        content()
+                    }
                 }
             }
-    }
-    LaunchedEffect(scrollState.maxValue, maxHeight) {
-        if (scrollState.maxValue > 0 && maxHeight > 0) {
-            scrollState.scrollTo((lastScrollYPercent * maxHeight).roundToInt())
         }
     }
 }

@@ -1,21 +1,20 @@
 package com.capyreader.app.ui.articles
 
-import android.content.Context
-import com.capyreader.app.R
 import com.capyreader.app.preferences.AppPreferences
 import com.capyreader.app.ui.addintent.AddLinkViewModel
 import com.capyreader.app.ui.articles.audio.AudioPlayerController
 import com.capyreader.app.ui.articles.feeds.edit.EditFeedViewModel
 import com.jocmp.capy.ai.SummaryQueue
-import com.jocmp.capy.articles.ArticleRenderer
-import com.jocmp.capy.articles.AudioPlayerLabels
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import com.capyreader.app.ui.articles.reader.VideoAspectRatios
+import com.capyreader.app.ui.articles.reader.VideoPlayerViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
 internal val articlesModule = module {
+    single { ArticleSessionCutoff() }
     factory {
         AddFeedViewModel(
             account = get(),
@@ -27,28 +26,13 @@ internal val articlesModule = module {
         )
     }
     single {
-        AudioPlayerController(
+        VideoAspectRatios(
             context = get()
         )
     }
     single {
-        val context = get<Context>()
-        val template = context.resources.openRawResource(R.raw.template)
-            .bufferedReader()
-            .readText()
-
-        ArticleRenderer(
-            template = template,
-            textSize = get<AppPreferences>().readerOptions.fontSize,
-            fontOption = get<AppPreferences>().readerOptions.fontFamily,
-            titleFontSize = get<AppPreferences>().readerOptions.titleFontSize,
-            textAlignment = get<AppPreferences>().readerOptions.titleTextAlignment,
-            titleFollowsBodyFont = get<AppPreferences>().readerOptions.titleFollowsBodyFont,
-            enableHorizontalScroll = get<AppPreferences>().readerOptions.enableHorizontaPagination,
-            audioPlayerLabels = AudioPlayerLabels(
-                play = context.getString(R.string.audio_player_play),
-                pause = context.getString(R.string.audio_player_pause),
-            ),
+        AudioPlayerController(
+            context = get()
         )
     }
     single {
@@ -69,7 +53,22 @@ internal val articlesModule = module {
             appPreferences = appPreferences,
             notificationHelper = get(),
             application = get(),
+            articleCutoff = get(),
+        )
+    }
+    viewModel {
+        ArticleViewModel(
+            account = get(),
+            appPreferences = get(),
+            application = get(),
+            notificationHelper = get(),
+            articleCutoff = get(),
             summaryQueue = get(),
+        )
+    }
+    viewModel {
+        VideoPlayerViewModel(
+            application = get(),
         )
     }
     viewModel {

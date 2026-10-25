@@ -20,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.capyreader.app.R
-import com.capyreader.app.ui.articles.ArticleScreenViewModel.SummaryState
 import com.jocmp.capy.ai.Summary
 import com.jocmp.capy.ai.SummaryStage
 

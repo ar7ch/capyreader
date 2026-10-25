@@ -13,9 +13,11 @@ import com.jocmp.capy.ArticleStatus
 import com.jocmp.capy.Feed
 import com.jocmp.capy.Folder
 import com.jocmp.capy.accounts.Source
+import com.jocmp.capy.articles.SortOrder
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import java.time.ZonedDateTime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,11 +38,6 @@ import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import com.jocmp.capy.ai.ChatClient
-import com.jocmp.capy.ai.Summarizer
-import com.jocmp.capy.ai.SummaryQueue
-import kotlinx.coroutines.CoroutineScope
-import okhttp3.OkHttpClient
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -110,6 +107,28 @@ class ArticleScreenViewModelTest {
 
         assertTrue(viewModel.refreshInitialized)
         assertFalse(viewModel.refreshingAll)
+    }
+
+    @Test
+    fun `shows onboarding for a local account without feeds`() = runTest {
+        val viewModel = buildViewModel()
+
+        viewModel.showOnboarding.test {
+            assertTrue(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `skips onboarding for a hosted account without feeds`() = runTest {
+        every { account.source } returns Source.FEEDBIN
+
+        val viewModel = buildViewModel()
+
+        viewModel.showOnboarding.test {
+            assertFalse(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -228,6 +247,76 @@ class ArticleScreenViewModelTest {
         )
     }
 
+    @Test
+    fun `selectStatus updates the filter without waiting on preferences`() = runTest {
+        appPreferences.filter.set(ArticleFilter.Articles(articleStatus = ArticleStatus.STARRED))
+
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        val starredList = viewModel.articleList.value
+
+        viewModel.selectStatus(ArticleStatus.UNREAD)
+
+        val expected = ArticleFilter.Articles(articleStatus = ArticleStatus.UNREAD)
+        assertEquals(expected, viewModel.filter.value)
+        assertEquals(expected, appPreferences.filter.get())
+
+        advanceUntilIdle()
+
+        assertEquals(expected, viewModel.articleList.value.filter)
+        assertTrue(starredList !== viewModel.articleList.value)
+    }
+
+    @Test
+    fun `applies filters persisted outside the view model`() = runTest {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        val deepLinked = ArticleFilter.Feeds(
+            feedID = "1",
+            folderTitle = null,
+            feedStatus = ArticleStatus.UNREAD
+        )
+        appPreferences.filter.set(deepLinked)
+        advanceUntilIdle()
+
+        assertEquals(deepLinked, viewModel.filter.value)
+    }
+
+    @Test
+    fun `markAllRead uses the sort order for the filter status`() = runTest {
+        appPreferences.articleListOptions.getSortOrder(ArticleStatus.UNREAD).set(SortOrder.OLDEST_FIRST)
+        val unread = ArticleFilter.Articles(articleStatus = ArticleStatus.UNREAD)
+        val starred = ArticleFilter.Articles(articleStatus = ArticleStatus.STARRED)
+        appPreferences.filter.set(unread)
+
+        val viewModel = buildViewModel()
+
+        viewModel.markAllRead(filter = unread)
+        viewModel.markAllRead(filter = starred)
+        advanceUntilIdle()
+
+        verify {
+            account.unreadArticleIDs(
+                filter = unread,
+                range = any(),
+                sortOrder = SortOrder.OLDEST_FIRST,
+                query = any(),
+                since = any(),
+            )
+        }
+        verify {
+            account.unreadArticleIDs(
+                filter = starred,
+                range = any(),
+                sortOrder = SortOrder.NEWEST_FIRST,
+                query = any(),
+                since = any(),
+            )
+        }
+    }
+
     private fun buildViewModel(
         syncFlushInterval: kotlin.time.Duration? = null,
     ): ArticleScreenViewModel {
@@ -238,14 +327,9 @@ class ArticleScreenViewModelTest {
             appPreferences = appPreferences,
             application = application,
             notificationHelper = notificationHelper,
-            summaryQueue = SummaryQueue(
-                account = account,
-                summarizer = Summarizer(ChatClient(OkHttpClient()), OkHttpClient()),
-                settings = { appPreferences.aiOptions.settings() },
-                scope = CoroutineScope(testDispatcher),
-            ),
             ioDispatcher = testDispatcher,
             syncFlushInterval = syncFlushInterval,
+            articleCutoff = ArticleSessionCutoff(),
         )
     }
 }

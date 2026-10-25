@@ -218,9 +218,7 @@
     <string name="article_view_open_externally">Abrir externamente</string>
     <string name="settings_confirm_mark_all_read">Confirmar ao marcar todos como lido</string>
     <string name="settings_mark_read_on_scroll">Marcar como lido ao rolar</string>
-    <string name="settings_gestures_reader_tap_to_page_title">Toque E-Ink para rolar</string>
     <string name="settings_gestures_enable_horizontal_pagination_title">Ativar rolagem horizontal</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Tocar no canto inferior para navegar para o conteúdo do artigo</string>
     <string name="settings_enable_high_contrast_dark_theme">Ativar tema escuro de alto contraste</string>
     <string name="settings_section_mark_all_as_read">Marcar Todos como Lido</string>
     <string name="settings_section_browser">Navegador</string>
@@ -254,8 +252,6 @@
     <string name="folder_action_edit_success">Etiqueta atualizada</string>
     <string name="folder_action_edit_error">Erro ao atualizar etiqueta</string>
     <string name="actions_copy_link">Copiar link</string>
-    <string name="settings_gestures_improve_talkback_title">Melhorar o TalkBack</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Desativa algumas configurações para melhorar o TalkBack text-to-speech</string>
     <string name="widget_receiver_headlines_title">Títulos</string>
     <string name="widget_headlines_account_error">Adicionar uma conta primeiro</string>
     <string name="widget_headlines_see_more_button">Ver mais artigos</string>
@@ -265,10 +261,6 @@
     <string name="add_account_miniflux_signup_link_text">Saiba mais.</string>
     <string name="add_account_miniflux_signup_prompt">Não tem uma instância do Miniflux?</string>
     <string name="settings_article_list_shorten_titles">Encurtar títulos</string>
-    <string name="mark_read_position_toolbar">Barra de ferramentas</string>
-    <string name="mark_read_position_floating_action_button">Botão de ação flutuante</string>
-    <string name="mark_all_read_button_position">Posição do botão \"Marcar todos como lido\"</string>
-    <string name="settings_display_miscellaneous_title">Diversos</string>
     <string name="open_articles_in_browser">Abrir artigos no navegador</string>
     <string name="theme_dynamic">Dinâmico</string>
     <string name="theme_newsprint">Papel jornal</string>
@@ -324,4 +316,7 @@
     <string name="tag_action_edit_success">Etiqueta atualizada</string>
     <string name="tag_action_edit_error">Erro ao atualizar etiqueta</string>
     <string name="tag_action_edit">Editar Etiqueta</string>
+    <string name="mark_read_position_toolbar">Barra de ferramentas</string>
+    <string name="mark_read_position_floating_action_button">Botão de ação flutuante</string>
+    <string name="mark_all_read_button_position">Posição do botão \"Marcar todos como lido\"</string>
 </resources>

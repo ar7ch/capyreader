@@ -14,6 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.capyreader.app.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun FullContentLoadingIcon(modifier: Modifier = Modifier) {
@@ -31,7 +32,7 @@ fun FullContentLoadingIcon(modifier: Modifier = Modifier) {
 
     LaunchedEffect(flipped) {
         launch {
-            delay(500)
+            delay(500.milliseconds)
             flipped = !flipped
         }
     }

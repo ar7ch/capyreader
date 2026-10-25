@@ -264,23 +264,15 @@
     <string name="widget_headlines_title">Нові заголовки</string>
     <string name="widget_headlines_see_more_button">Більше статей</string>
     <string name="widget_headlines_account_error">Спершу додайте обліковий запис</string>
-    <string name="mark_read_position_toolbar">На панелі</string>
-    <string name="settings_display_miscellaneous_title">Різне</string>
     <string name="open_articles_in_browser">Відкривати статті в браузері</string>
     <string name="selected">Вибрано</string>
-    <string name="mark_all_read_button_position">Кнопка позначення прочитаними</string>
-    <string name="mark_read_position_floating_action_button">Спливна</string>
-    <string name="settings_gestures_improve_talkback_title">Покращити TalkBack</string>
-    <string name="settings_gestures_improve_talkback_subtitle">Вимикає деякі параметри, щоб TalkBack краще озвучувала текст</string>
     <string name="settings_gestures_enable_horizontal_pagination_title">Горизонтальне гортання</string>
     <string name="settings_gestures_reader_swipe_down">Гортання вниз</string>
     <string name="settings_gestures_reader_swipe_up">Гортання вгору</string>
     <string name="settings_gestures_list_row_swipe_start">Гортання праворуч</string>
     <string name="settings_gestures_list_row_swipe_end">Гортання ліворуч</string>
     <string name="settings_gestures_list_swipe_up">Гортання вгору</string>
-    <string name="settings_gestures_reader_tap_to_page_title">Гортання дотиком</string>
     <string name="settings_gestures_enable_horizontal_pagination_subtitle">Перемикати статті гортанням ліворуч або праворуч</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">Гортати текст статті дотиком до нижніх країв</string>
     <string name="theme_newsprint">Газета</string>
     <string name="filter_today">Сьогодні</string>
     <string name="settings_option_show_today_filter">Сьогодні</string>
@@ -313,9 +305,6 @@
     <string name="add_link_feed_added">Стрічку додано</string>
     <string name="add_link_page_saved">Сторінку збережено</string>
     <string name="settings_panel_unread_counts_title">Підписи непрочитаних</string>
-    <string name="settings_option_badge_style">Стиль підпису</string>
-    <string name="badge_style_simple">Простий</string>
-    <string name="badge_style_exact">Точний</string>
     <string name="show_unread_badge">Підписи непрочитаних</string>
     <string name="article_actions_save_externally">Зберегти</string>
     <string name="article_actions_save_externally_success">Збережено</string>
@@ -351,4 +340,7 @@
     <string name="article_list_new_articles_pill">Нові статті</string>
     <string name="settings_refresh_on_wifi_only">Оновлювати лише по Wi-Fi</string>
     <string name="refresh_skipped_mobile">Не оновлено, бо мобільна мережа</string>
+    <string name="mark_read_position_toolbar">На панелі</string>
+    <string name="mark_all_read_button_position">Кнопка позначення прочитаними</string>
+    <string name="mark_read_position_floating_action_button">Спливна</string>
 </resources>

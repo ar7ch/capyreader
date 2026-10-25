@@ -20,9 +20,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusTarget
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.res.stringResource
-import com.capyreader.app.ui.isCompact
+import com.capyreader.app.ui.isSinglePane
 import com.capyreader.app.ui.settings.panels.SettingsPanel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,12 +38,16 @@ fun SettingsPanelScaffold(
 ) {
     val scrollBehavior = exitUntilCollapsedScrollBehavior(state = rememberTopAppBarState())
     val snackbarHost = remember { SnackbarHostState() }
+    val inputModeManager = LocalInputModeManager.current
 
     CompositionLocalProvider(
         LocalSnackbarHost provides snackbarHost
     ) {
         Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier
+                .focusProperties { canFocus = inputModeManager.inputMode == InputMode.Touch }
+                .focusTarget()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
             snackbarHost = { SnackbarHost(hostState = snackbarHost) },
             topBar = {
                 LargeTopAppBar(
@@ -48,7 +56,7 @@ fun SettingsPanelScaffold(
                         Text(stringResource(panel.title))
                     },
                     navigationIcon = {
-                        if (isCompact() || panel.isNested()) {
+                        if (isSinglePane()) {
                             IconButton(
                                 onClick = {
                                     onBack()

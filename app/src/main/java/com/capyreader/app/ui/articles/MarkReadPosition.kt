@@ -7,8 +7,8 @@ enum class MarkReadPosition {
     FLOATING_ACTION_BUTTON;
 
     val translationKey: Int
-        get() = when(this) {
-           TOOLBAR -> R.string.mark_read_position_toolbar
+        get() = when (this) {
+            TOOLBAR -> R.string.mark_read_position_toolbar
             FLOATING_ACTION_BUTTON -> R.string.mark_read_position_floating_action_button
         }
 

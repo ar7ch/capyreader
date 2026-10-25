@@ -1,12 +1,17 @@
 package com.capyreader.app.ui.articles
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.layout.PaneExpansionAnchor
 import androidx.compose.material3.adaptive.layout.PaneExpansionState
+import androidx.compose.material3.adaptive.layout.PaneScaffoldDirective
 import androidx.compose.material3.adaptive.layout.rememberPaneExpansionState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -14,18 +19,30 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.capyreader.app.preferences.AppPreferences
-import com.capyreader.app.ui.isCompact
+import com.capyreader.app.ui.isSinglePane
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
+/**
+ * Bridges the list-detail [PaneExpansionState] (owned by the Scene at the [App] level) down into the
+ * reader entry, so the reader's top-bar toggle can expand/collapse the detail pane. `null` when no
+ * expandable pane is present (compact / single-pane).
+ */
+val LocalArticlePaneExpansion = compositionLocalOf<ArticlePaneExpansion?> { null }
+
 private val DetailFullscreenAnchor = PaneExpansionAnchor.Proportion(0f)
 private val ListFullscreenAnchor = PaneExpansionAnchor.Proportion(1f)
 
-const val DefaultPaneExpansionIndex = 4
+const val DefaultPaneExpansionIndex = 1
 
-private val ArticlePaneAnchors: List<PaneExpansionAnchor> = buildList {
+private fun articlePaneAnchors(directive: PaneScaffoldDirective): List<PaneExpansionAnchor> = buildList {
     add(PaneExpansionAnchor.Proportion(0f))
+    add(
+        PaneExpansionAnchor.Offset.fromStart(
+            directive.defaultPanePreferredWidth + directive.horizontalPartitionSpacerSize / 2
+        )
+    )
     (30..70 step 5).forEach { add(PaneExpansionAnchor.Proportion(it / 100f)) }
     add(PaneExpansionAnchor.Proportion(1f))
 }
@@ -34,6 +51,7 @@ private val ArticlePaneAnchors: List<PaneExpansionAnchor> = buildList {
 class ArticlePaneExpansion(
     val state: PaneExpansionState,
     val isFullscreen: Boolean,
+    val isDetailHidden: Boolean,
     private val anchors: List<PaneExpansionAnchor>,
     private val lastAnchorIndex: Int,
     private val scope: CoroutineScope,
@@ -70,18 +88,19 @@ class ArticlePaneExpansion(
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
 fun rememberArticlePaneExpansion(
+    directive: PaneScaffoldDirective,
     appPreferences: AppPreferences = koinInject(),
 ): ArticlePaneExpansion {
-    val anchors = ArticlePaneAnchors
+    val anchors = remember(directive) { articlePaneAnchors(directive) }
 
-    val savedIndex = appPreferences.paneExpansionIndex.get()
+    val savedIndex = appPreferences.paneExpansionAnchor.get()
         .coerceIn(0, anchors.lastIndex)
 
     val paneExpansionState = rememberPaneExpansionState(
         anchors = anchors,
         initialAnchoredIndex = savedIndex,
     )
-    val compact = isCompact()
+    val compact = isSinglePane()
     val scope = rememberCoroutineScope()
     var lastAnchorIndex by rememberSaveable { mutableIntStateOf(savedIndex) }
     val listFullscreenIndex = anchors.lastIndex
@@ -92,7 +111,7 @@ fun rememberArticlePaneExpansion(
 
         if (index in 1..listFullscreenIndex) {
             lastAnchorIndex = index
-            appPreferences.paneExpansionIndex.set(index)
+            appPreferences.paneExpansionAnchor.set(index)
         }
     }
 
@@ -106,9 +125,21 @@ fun rememberArticlePaneExpansion(
         ArticlePaneExpansion(
             state = paneExpansionState,
             isFullscreen = isFullscreen,
+            isDetailHidden = isDetailHidden,
             anchors = anchors,
             lastAnchorIndex = lastAnchorIndex,
             scope = scope,
         )
     }
+}
+
+@Composable
+fun WindowInsets.listPaneInsets(): WindowInsets {
+    val paneExpansion = LocalArticlePaneExpansion.current
+
+    if (isSinglePane() || paneExpansion == null || paneExpansion.isDetailHidden) {
+        return this
+    }
+
+    return only(WindowInsetsSides.Start + WindowInsetsSides.Vertical)
 }

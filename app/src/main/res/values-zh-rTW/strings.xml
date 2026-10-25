@@ -201,8 +201,6 @@
     <string name="add_account_freshrss_signup_prompt">沒有 FreshRSS 實例？</string>
     <string name="add_account_feedbin_signup_link_text">在這裡建立一個。</string>
     <string name="add_account_freshrss_signup_link_text">了解更多。</string>
-    <string name="settings_gestures_reader_tap_to_page_subtitle">點擊底部角落上下翻頁</string>
-    <string name="settings_gestures_reader_tap_to_page_title">E Ink 手勢</string>
     <string name="settings_enable_high_contrast_dark_theme">高對比度深色主題</string>
     <string name="settings_mark_read_on_scroll">滾動時標為已讀</string>
     <string name="settings_section_mark_all_as_read">全部標為已讀</string>
@@ -264,15 +262,9 @@
     <string name="widget_headlines_title">最新頭條</string>
     <string name="widget_headlines_see_more_button">查看更多文章</string>
     <string name="widget_headlines_account_error">先新增一個帳戶</string>
-    <string name="settings_gestures_improve_talkback_subtitle">停用某些設定以改善 TalkBack 文字轉語音功能</string>
-    <string name="settings_gestures_improve_talkback_title">改善 TalkBack</string>
     <string name="settings_options_reader_pin_top_toolbar">固定頂部工具列</string>
     <string name="add_account_miniflux_signup_prompt">沒有 Miniflux 實例？</string>
     <string name="add_account_miniflux_signup_link_text">了解更多。</string>
-    <string name="mark_read_position_toolbar">工具列</string>
-    <string name="settings_display_miscellaneous_title">雜類</string>
-    <string name="mark_all_read_button_position">全部標為已讀按鈕位置</string>
-    <string name="mark_read_position_floating_action_button">浮動操作按鈕</string>
     <string name="theme_dynamic">動態</string>
     <string name="theme_newsprint">新聞紙</string>
     <string name="theme_monochrome">單色</string>
@@ -306,9 +298,6 @@
     <string name="audio_player_skip_forward">快轉 30 秒</string>
     <string name="open_articles_in_browser">在瀏覽器中開啟文章</string>
     <string name="settings_panel_unread_counts_title">未讀徽章</string>
-    <string name="settings_option_badge_style">徽章風格</string>
-    <string name="badge_style_simple">簡單</string>
-    <string name="badge_style_exact">精確</string>
     <string name="show_unread_badge">顯示未讀徽章</string>
     <string name="tab_save_page">儲存頁面</string>
     <string name="save_page_success">頁面已儲存</string>
@@ -356,4 +345,7 @@
     <string name="article_list_new_articles_pill">新文章</string>
     <string name="settings_refresh_on_wifi_only">僅在 Wi-Fi 上重新整理</string>
     <string name="refresh_skipped_mobile">已在行動網路上略過重新整理</string>
+    <string name="mark_read_position_toolbar">工具列</string>
+    <string name="mark_all_read_button_position">全部標為已讀按鈕位置</string>
+    <string name="mark_read_position_floating_action_button">浮動操作按鈕</string>
 </resources>

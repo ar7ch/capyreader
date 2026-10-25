@@ -27,6 +27,7 @@ class ArticleMapperTest {
             openInBrowser = false,
             feedURL = null,
             siteURL = null,
+            readLater = false,
             updatedAt = 1703960809,
             starred = false,
             read = false,
