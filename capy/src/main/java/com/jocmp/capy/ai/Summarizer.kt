@@ -6,6 +6,7 @@ import okhttp3.OkHttpClient
 
 data class Summary(
     val article: String,
+    /** Null when there is no thread or it failed to load; blank when it has no comments yet. */
     val discussion: String? = null,
     /** The model that wrote [article], when known. */
     val model: String? = null,
@@ -63,7 +64,8 @@ class Summarizer(
     }
 
     /**
-     * A missing or broken comment thread leaves the article summary alone.
+     * A missing or broken comment thread leaves the article summary alone. A thread without
+     * comments yields a blank discussion, so callers can tell it apart from a failed fetch.
      */
     private suspend fun discussionSummary(
         settings: AiSettings,
@@ -83,6 +85,10 @@ class Summarizer(
                 )
             }
             .getOrNull() ?: return null
+
+        if (thread.isBlank()) {
+            return ""
+        }
 
         onProgress(Summary(article = articleSummary), SummaryStage.SUMMARIZING_COMMENTS)
 

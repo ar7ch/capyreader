@@ -21,7 +21,8 @@ object Discussion {
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * Returns null on success when the URL points at a site without a comment API.
+     * Returns null on success when the URL points at a site without a comment API, and a blank
+     * string when the thread has no comments yet.
      */
     suspend fun fetch(commentsURL: String?, httpClient: OkHttpClient): Result<String?> {
         val apiURL = apiURL(commentsURL) ?: return Result.success(null)
@@ -46,7 +47,7 @@ object Discussion {
                 formatLobsters(json.decodeFromString<LobstersStory>(body))
             }
 
-            Result.success(thread.ifBlank { null })
+            Result.success(thread)
         } catch (e: IOException) {
             Result.failure(e)
         } catch (e: Throwable) {
@@ -126,6 +127,9 @@ object Discussion {
         lines.forEach { line ->
             if (joined.length + line.length + 1 <= MAX_LENGTH) {
                 joined.append(line).append("\n")
+            } else if (joined.isEmpty()) {
+                // A thread whose first comment alone is too long still has comments.
+                joined.append(line.take(MAX_LENGTH - 1)).append("\n")
             }
         }
 

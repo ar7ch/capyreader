@@ -61,7 +61,11 @@ fun ArticleSummarySheet(
                     val partial = loading?.partial
 
                     if (partial != null) {
-                        SummaryBody(summary = partial, hasDiscussionSite = false)
+                        // A blank discussion mid-stream is a retry starting over, not an empty thread.
+                        SummaryBody(
+                            summary = partial.copy(discussion = partial.discussion?.ifBlank { null }),
+                            hasDiscussionSite = false,
+                        )
                     }
                 }
 
@@ -112,7 +116,15 @@ private fun SummaryBody(summary: Summary, hasDiscussionSite: Boolean) {
 
         val discussion = summary.discussion
 
-        if (discussion != null) {
+        if (discussion?.isBlank() == true) {
+            SummarySection(title = stringResource(R.string.article_summary_discussion_title)) {
+                Text(
+                    text = stringResource(R.string.article_summary_discussion_empty),
+                    style = typography.bodyMedium,
+                    color = colorScheme.onSurfaceVariant,
+                )
+            }
+        } else if (discussion != null) {
             SummarySection(title = stringResource(R.string.article_summary_discussion_title)) {
                 SummaryText(text = discussion)
             }

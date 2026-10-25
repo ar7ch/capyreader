@@ -6,6 +6,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class DiscussionTest {
     private val hackerNewsJSON = """
@@ -117,5 +118,17 @@ class DiscussionTest {
         )
 
         assertEquals(expected = true, actual = result.isFailure)
+    }
+
+    @Test
+    fun fetch_keepsAnOverlongFirstComment() = runTest {
+        val long = "x".repeat(20_000)
+        val interceptor = RecordingInterceptor(
+            """{"comments":[{"comment":"$long","comment_plain":"$long","commenting_user":"a","score":1}]}"""
+        )
+
+        val thread = Discussion.fetch("https://lobste.rs/s/abc123/story", interceptor.client()).getOrThrow()
+
+        assertTrue(thread.orEmpty().isNotBlank())
     }
 }

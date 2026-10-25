@@ -20,9 +20,10 @@ sealed interface SummaryState {
 
 fun summaryState(status: SummaryStatus?): SummaryState {
     return when (status) {
-        null -> SummaryState.Idle
-        SummaryStatus.Queued,
-        SummaryStatus.Stored -> SummaryState.Loading()
+        // A stored summary is only read once asked for, so until then nothing is in progress.
+        null,
+        SummaryStatus.Stored -> SummaryState.Idle
+        SummaryStatus.Queued -> SummaryState.Loading()
         is SummaryStatus.Running -> SummaryState.Loading(
             partial = status.partial,
             stage = status.stage,

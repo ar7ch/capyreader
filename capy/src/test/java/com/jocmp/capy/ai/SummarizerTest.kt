@@ -125,6 +125,21 @@ class SummarizerTest {
     }
 
     @Test
+    fun summarize_marksAThreadWithoutComments() = runTest {
+        val chat = RecordingInterceptor(chatResponse("Article summary."))
+        val web = RecordingInterceptor("""{"comments":[]}""")
+
+        val result = Summarizer(ChatClient(chat.client()), web.client()).summarize(
+            settings = settings,
+            article = article(commentsURL = "https://lobste.rs/s/abc123/story"),
+            pageHTML = "<body><article><p>Some real article text.</p></article></body>",
+        ).getOrThrow()
+
+        assertEquals(expected = "", actual = result.discussion)
+        assertEquals(expected = 1, actual = chat.requests.size)
+    }
+
+    @Test
     fun summarize_reportsStagesAndPartialText() = runTest {
         val chat = RecordingInterceptor(
             responses = listOf(
